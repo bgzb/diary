@@ -16,6 +16,8 @@ struct ContentView: View {
     @State private var renamingGroupText = ""
     @FocusState private var groupFieldFocused: Bool
 
+    @State private var newEntryDialogName = ""
+
     var body: some View {
         // Track all settings that MarkdownEditorView depends on.
         // Without these reads, SwiftUI won't call updateNSView when settings change.
@@ -51,6 +53,25 @@ struct ContentView: View {
         } message: {
             Text(L.string(.deleteEntryMessage, lang: settings.appLanguage))
         }
+        .alert(L.string(.newEntry, lang: settings.appLanguage), isPresented: Binding(
+            get: { model.showNewEntryDialog },
+            set: { model.showNewEntryDialog = $0 }
+        )) {
+            TextField(L.string(.entryName, lang: settings.appLanguage), text: $newEntryDialogName)
+            Button(L.string(.create, lang: settings.appLanguage)) {
+                model.createEntry(name: newEntryDialogName)
+            }
+            Button(L.string(.cancel, lang: settings.appLanguage), role: .cancel) {
+                newEntryDialogName = ""
+            }
+        }
+        .onChange(of: model.showNewEntryDialog) { _, showing in
+            if showing {
+                let df = DateFormatter()
+                df.dateFormat = "yyyy-MM-dd"
+                newEntryDialogName = df.string(from: Date())
+            }
+        }
         .toolbar {
             ToolbarItemGroup {
                 Button {
@@ -79,8 +100,18 @@ struct ContentView: View {
             groupBanner
             Divider()
                 .padding(.horizontal, 10)
-            entriesHeader
-            entriesList
+            VStack(spacing: 0) {
+                entriesHeader
+                entriesList
+            }
+            .contextMenu {
+                Button {
+                    model.newEntry()
+                } label: {
+                    Label(L.string(.newEntry, lang: settings.appLanguage),
+                          systemImage: "square.and.pencil")
+                }
+            }
         }
         .background(sidebarBackground.ignoresSafeArea())
     }

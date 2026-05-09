@@ -47,6 +47,8 @@ enum LKey {
     case entries
     case noEntries
     case createFirstEntry
+    case create
+    case entryName
     case delete
     case deleteEntryTitle
     case deleteEntryMessage
@@ -130,6 +132,8 @@ enum LKey {
         case .entries: return "Entries"
         case .noEntries: return "No Entries"
         case .createFirstEntry: return "Create Your First Entry"
+        case .create: return "Create"
+        case .entryName: return "Name"
         case .delete: return "Delete"
         case .deleteEntryTitle: return "Delete Entry"
         case .deleteEntryMessage: return "Are you sure you want to delete this entry? This action can be undone."
@@ -200,6 +204,8 @@ enum LKey {
         case .entries: return "日记"
         case .noEntries: return "没有日记"
         case .createFirstEntry: return "创建第一篇日记"
+        case .create: return "创建"
+        case .entryName: return "名称"
         case .delete: return "删除"
         case .deleteEntryTitle: return "删除日记"
         case .deleteEntryMessage: return "确定要删除这篇日记吗？此操作可以撤销。"

@@ -49,12 +49,17 @@ final class ViewModel {
         currentEntry = entry
     }
 
+    var showNewEntryDialog = false
+
     func newEntry() {
         flushSave()
+        showNewEntryDialog = true
+    }
+
+    func createEntry(name: String) {
+        let title = name.trimmingCharacters(in: .whitespaces)
+        guard !title.isEmpty else { return }
         store.useDatePrefix = settings.useDatePrefix
-        let df = DateFormatter()
-        df.dateFormat = "yyyy-MM-dd"
-        let title = df.string(from: Date())
         let entry = store.createEntry(title: title)
         selectEntry(entry)
     }
