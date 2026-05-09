@@ -1,0 +1,6 @@
+.build/
+DerivedData/
+*.xcodeproj/
+xcuserdata/
+Diary.app/
+/Diary
