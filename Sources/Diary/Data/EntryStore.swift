@@ -5,7 +5,7 @@ struct Entry: Identifiable, Hashable {
     var title: String
     var content: String
     var fileURL: URL
-    let createdAt: Date
+    var createdAt: Date
     var modifiedAt: Date
 
     init(id: String = UUID().uuidString, title: String, content: String = "", fileURL: URL) {
@@ -133,6 +133,92 @@ final class EntryStore {
 
     // MARK: - Entries
 
+    func allEntryDates() -> [Date] {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let pattern = try! NSRegularExpression(pattern: #"^\d{4}-\d{2}-\d{2}"#)
+        var dates: [Date] = []
+
+        for group in groups {
+            let dir = baseDir.appendingPathComponent(group.id)
+            guard let files = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.creationDateKey])
+            else { continue }
+            for file in files where file.pathExtension == "md" {
+                let filename = file.deletingPathExtension().lastPathComponent
+                let range = NSRange(filename.startIndex..., in: filename)
+                if let match = pattern.firstMatch(in: filename, range: range),
+                   let r = Range(match.range, in: filename),
+                   let date = df.date(from: String(filename[r])) {
+                    dates.append(date)
+                } else if let attrs = try? FileManager.default.attributesOfItem(atPath: file.path),
+                          let creationDate = attrs[.creationDate] as? Date {
+                    dates.append(creationDate)
+                }
+            }
+        }
+        return dates
+    }
+
+    func entriesForDate(_ date: Date) -> [(Entry, groupName: String)] {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        let pattern = try! NSRegularExpression(pattern: #"^\d{4}-\d{2}-\d{2}"#)
+        var result: [(Entry, groupName: String)] = []
+
+        for group in groups {
+            let dir = baseDir.appendingPathComponent(group.id)
+            guard let files = try? FileManager.default.contentsOfDirectory(
+                at: dir,
+                includingPropertiesForKeys: [.creationDateKey, .contentModificationDateKey]
+            ) else { continue }
+            for file in files where file.pathExtension == "md" {
+                let filename = file.deletingPathExtension().lastPathComponent
+
+                // Try date prefix first
+                let range = NSRange(filename.startIndex..., in: filename)
+                let hasDatePrefix: Bool = {
+                    if let match = pattern.firstMatch(in: filename, range: range),
+                       let r = Range(match.range, in: filename),
+                       let d = df.date(from: String(filename[r])),
+                       Calendar.current.isDate(d, inSameDayAs: date) {
+                        return true
+                    }
+                    return false
+                }()
+
+                // Fallback to creation date
+                let attrs = try? FileManager.default.attributesOfItem(atPath: file.path)
+                let hasCreationDate: Bool = {
+                    if let creationDate = attrs?[.creationDate] as? Date,
+                       Calendar.current.isDate(creationDate, inSameDayAs: date) {
+                        return true
+                    }
+                    return false
+                }()
+
+                guard hasDatePrefix || hasCreationDate else { continue }
+
+                guard let content = try? String(contentsOf: file, encoding: .utf8) else { continue }
+                let displayTitle = displayTitle(from: filename)
+                var entry = Entry(
+                    id: file.path,
+                    title: displayTitle,
+                    content: content,
+                    fileURL: file
+                )
+                // Override with real file dates instead of Date()
+                if let realMod = attrs?[.modificationDate] as? Date {
+                    entry.modifiedAt = realMod
+                }
+                if let realCreate = attrs?[.creationDate] as? Date {
+                    entry.createdAt = realCreate
+                }
+                result.append((entry, group.name))
+            }
+        }
+        return result
+    }
+
     @discardableResult
     func createEntry(title: String) -> Entry {
         let sanitized = title.replacingOccurrences(of: "/", with: "-")
@@ -235,21 +321,25 @@ final class EntryStore {
     private func loadEntries() {
         guard let files = try? FileManager.default.contentsOfDirectory(
             at: currentGroupDir,
-            includingPropertiesForKeys: [.contentModificationDateKey]
+            includingPropertiesForKeys: [.contentModificationDateKey, .creationDateKey]
         ) else { return }
 
         entries = files
             .filter { $0.pathExtension == "md" }
-            .compactMap { url in
+            .compactMap { url -> Entry? in
                 guard let content = try? String(contentsOf: url, encoding: .utf8) else { return nil }
                 let filename = url.deletingPathExtension().lastPathComponent
                 let displayTitle = displayTitle(from: filename)
-                return Entry(
+                let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
+                var entry = Entry(
                     id: url.path,
                     title: displayTitle,
                     content: content,
                     fileURL: url
                 )
+                if let mod = attrs?[.modificationDate] as? Date { entry.modifiedAt = mod }
+                if let cr = attrs?[.creationDate] as? Date { entry.createdAt = cr }
+                return entry
             }
             .sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
     }

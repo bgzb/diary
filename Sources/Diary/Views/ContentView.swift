@@ -17,6 +17,9 @@ struct ContentView: View {
     @FocusState private var groupFieldFocused: Bool
 
     @State private var newEntryDialogName = ""
+    @State private var showCalendar = false
+    @State private var showCalendarStandalone = false
+    @State private var displayedInspectorMonth = Date()
 
     var body: some View {
         // Track all settings that MarkdownEditorView depends on.
@@ -33,6 +36,10 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 280)
         } detail: {
             mainContent
+                .inspector(isPresented: $showCalendar) {
+                    calendarInspector
+                        .inspectorColumnWidth(min: 250, ideal: 280, max: 340)
+                }
         }
         .preferredColorScheme(colorScheme)
         .alert(L.string(.deleteEntryTitle, lang: settings.appLanguage), isPresented: Binding(
@@ -65,6 +72,11 @@ struct ContentView: View {
                 newEntryDialogName = ""
             }
         }
+        .onChange(of: showCalendar) { _, visible in
+            if !visible {
+                model.selectedDate = nil
+            }
+        }
         .onChange(of: model.showNewEntryDialog) { _, showing in
             if showing {
                 let df = DateFormatter()
@@ -80,6 +92,21 @@ struct ContentView: View {
                     Image(systemName: "square.and.pencil")
                 }
                 .help(L.string(.newEntry, lang: settings.appLanguage))
+
+                Button {
+                    if showCalendarStandalone {
+                        showCalendarStandalone = false
+                    }
+                    showCalendar.toggle()
+                    if showCalendar {
+                        model.selectedDate = Date()
+                    } else {
+                        model.selectedDate = nil
+                    }
+                } label: {
+                    Image(systemName: "calendar")
+                }
+                .help(L.string(.calendar, lang: settings.appLanguage))
 
                 Spacer()
 
@@ -112,6 +139,34 @@ struct ContentView: View {
                           systemImage: "square.and.pencil")
                 }
             }
+
+            Divider()
+                .padding(.horizontal, 10)
+                .padding(.top, 4)
+
+            Button {
+                if showCalendar {
+                    showCalendar = false
+                }
+                showCalendarStandalone.toggle()
+                model.selectedDate = showCalendarStandalone ? Date() : nil
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(showCalendarStandalone ? Color.accentColor : .secondary)
+                    Text(L.string(.calendar, lang: settings.appLanguage))
+                        .font(.system(size: 13, weight: showCalendarStandalone ? .medium : .regular))
+                        .foregroundStyle(showCalendarStandalone ? .primary : .secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 6)
+                .contentShape(Rectangle())
+                .background(showCalendarStandalone ? Color.accentColor.opacity(0.08) : Color.clear)
+            }
+            .buttonStyle(.plain)
+            .padding(.bottom, 6)
         }
         .background(sidebarBackground.ignoresSafeArea())
     }
@@ -287,6 +342,7 @@ struct ContentView: View {
             get: { model.currentEntry?.id },
             set: { id in
                 if let id, let entry = model.entries.first(where: { $0.id == id }) {
+                    showCalendarStandalone = false
                     model.selectEntry(entry)
                 }
             }
@@ -434,7 +490,9 @@ struct ContentView: View {
 
     private var mainContent: some View {
         VStack(spacing: 0) {
-            if let entry = model.currentEntry {
+            if showCalendarStandalone {
+                calendarStandaloneView
+            } else if let entry = model.currentEntry {
                 Text(entry.title)
                     .font(.system(size: 28, weight: .bold))
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -469,5 +527,281 @@ struct ContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: - Calendar Inspector
+
+    private var calendarInspector: some View {
+        VStack(spacing: 0) {
+            CalendarView(
+                displayedMonth: $displayedInspectorMonth,
+                entryDates: model.entryDates,
+                selectedDate: Binding(
+                    get: { model.selectedDate },
+                    set: { model.selectedDate = $0 }
+                )
+            )
+            .padding(12)
+
+            Divider()
+
+            if let date = model.selectedDate {
+                dateEntriesInInspector(date)
+            } else {
+                VStack(spacing: 6) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 24, weight: .ultraLight))
+                        .foregroundStyle(.tertiary)
+                    Text(L.string(.calendar, lang: settings.appLanguage))
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                    Text("Select a date to filter entries")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.tertiary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .background(contentBackground)
+    }
+
+    private func dateEntriesInInspector(_ date: Date) -> some View {
+        let matching = model.entriesForSelectedDate()
+
+        return VStack(spacing: 0) {
+            HStack {
+                Text(dateDisplayString(date))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if !matching.isEmpty {
+                    Text("\(matching.count) entries")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+
+            if matching.isEmpty {
+                VStack(spacing: 0) {
+                    Spacer()
+                    if Calendar.current.isDateInToday(date) {
+                        VStack(spacing: 12) {
+                            Image(systemName: "sun.max")
+                                .font(.system(size: 28, weight: .ultraLight))
+                                .foregroundStyle(.tertiary)
+                            Text(L.string(.noEntryToday, lang: settings.appLanguage))
+                                .font(.system(size: 13))
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                            Button {
+                                model.newEntry()
+                            } label: {
+                                Label(L.string(.newEntry, lang: settings.appLanguage),
+                                      systemImage: "square.and.pencil")
+                                    .font(.system(size: 12))
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    } else {
+                        Text(L.string(.noEntriesForDate, lang: settings.appLanguage))
+                            .font(.system(size: 12))
+                            .foregroundStyle(.tertiary)
+                    }
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List(Array(matching.enumerated()), id: \.offset) { _, pair in
+                    let (entry, groupName) = pair
+                    Button {
+                        // Switch to the entry's group, then select the entry
+                        if let group = model.groups.first(where: { $0.name == groupName }) {
+                            model.selectGroup(group)
+                        }
+                        // Re-fetch the entry from the new current group
+                        if let reloaded = model.entries.first(where: { $0.title == entry.title &&
+                            $0.fileURL.deletingPathExtension().lastPathComponent == entry.fileURL.deletingPathExtension().lastPathComponent }) {
+                            model.selectEntry(reloaded)
+                        }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack {
+                                Text(entry.title)
+                                    .font(.system(size: 12))
+                                    .lineLimit(1)
+                                Spacer()
+                                Text(groupName)
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.tertiary)
+                                    .padding(.horizontal, 4)
+                                    .padding(.vertical, 1)
+                                    .background(Color.primary.opacity(0.06))
+                                    .clipShape(RoundedRectangle(cornerRadius: 2))
+                            }
+                            Text(modifiedAtString(entry.modifiedAt))
+                                .font(.system(size: 10))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, 8)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .listRowBackground(
+                        entry.id == model.currentEntry?.id
+                            ? Color.accentColor.opacity(0.1)
+                            : Color.clear
+                    )
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private func dateDisplayString(_ date: Date) -> String {
+        let df = DateFormatter()
+        df.dateFormat = "EEEE, MMMM d, yyyy"
+        return df.string(from: date)
+    }
+
+    private func modifiedAtString(_ date: Date) -> String {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return df.string(from: date)
+    }
+
+    // MARK: - Standalone Calendar
+
+    private var calendarStandaloneView: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                Button {
+                    showCalendarStandalone = false
+                } label: {
+                    Label(L.string(.backToEntries, lang: settings.appLanguage),
+                          systemImage: "arrow.left")
+                        .font(.system(size: 13, weight: .medium))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+            }
+
+            CalendarView(
+                displayedMonth: $displayedInspectorMonth,
+                entryDates: model.entryDates,
+                selectedDate: Binding(
+                    get: { model.selectedDate },
+                    set: { model.selectedDate = $0 }
+                )
+            )
+            .padding(.horizontal, 40)
+            .padding(.bottom, 16)
+
+            Divider()
+                .padding(.horizontal, 20)
+
+            if let date = model.selectedDate {
+                dateEntriesStandalone(date)
+            } else {
+                VStack(spacing: 8) {
+                    Image(systemName: "hand.tap")
+                        .font(.system(size: 28, weight: .ultraLight))
+                        .foregroundStyle(.tertiary)
+                    Text("Select a date to view entries")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+    }
+
+    private func dateEntriesStandalone(_ date: Date) -> some View {
+        let matching = model.entriesForSelectedDate()
+
+        return VStack(spacing: 0) {
+            HStack {
+                Text(dateDisplayString(date))
+                    .font(.system(size: 14, weight: .semibold))
+                Spacer()
+                Text("\(matching.count) entries")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 40)
+            .padding(.vertical, 10)
+
+            if matching.isEmpty {
+                VStack(spacing: 0) {
+                    Spacer()
+                    if Calendar.current.isDateInToday(date) {
+                        VStack(spacing: 16) {
+                            Image(systemName: "sun.max")
+                                .font(.system(size: 40, weight: .ultraLight))
+                                .foregroundStyle(.tertiary)
+                            Text(L.string(.noEntryToday, lang: settings.appLanguage))
+                                .font(.system(size: 15))
+                                .foregroundStyle(.secondary)
+                            Button {
+                                model.newEntry()
+                            } label: {
+                                Label(L.string(.newEntry, lang: settings.appLanguage),
+                                      systemImage: "square.and.pencil")
+                            }
+                        }
+                    } else {
+                        Text(L.string(.noEntriesForDate, lang: settings.appLanguage))
+                            .font(.system(size: 13))
+                            .foregroundStyle(.tertiary)
+                    }
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List(Array(matching.enumerated()), id: \.offset) { _, pair in
+                    let (entry, groupName) = pair
+                    Button {
+                        if let group = model.groups.first(where: { $0.name == groupName }) {
+                            model.selectGroup(group)
+                        }
+                        if let reloaded = model.entries.first(where: { $0.title == entry.title }) {
+                            model.selectEntry(reloaded)
+                        }
+                        showCalendarStandalone = false
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack {
+                                Text(entry.title)
+                                    .font(.system(size: 14))
+                                Spacer()
+                                Text(groupName)
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.tertiary)
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 1)
+                                    .background(Color.primary.opacity(0.06))
+                                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                            }
+                            Text(modifiedAtString(entry.modifiedAt))
+                                .font(.system(size: 11))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 24)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+            }
+        }
     }
 }

@@ -20,10 +20,21 @@ final class ViewModel {
     var groups: [DiaryGroup] { store.groups }
     var currentGroupID: String { store.currentGroupID }
 
+    var selectedDate: Date?
+    var entryDates: Set<Date> {
+        Set(store.allEntryDates().map { Calendar.current.startOfDay(for: $0) })
+    }
+
+    func entriesForSelectedDate() -> [(Entry, groupName: String)] {
+        guard let date = selectedDate else { return [] }
+        return store.entriesForDate(date)
+    }
+
     let settings: SettingsStore
     var pendingDelete = false
     private var store: EntryStore
     private var saveTimer: Timer?
+    private var lastSavedContent: String?
 
     init(settings: SettingsStore) {
         self.settings = settings
@@ -31,6 +42,13 @@ final class ViewModel {
             basePath: settings.resolvedStoragePath,
             useDatePrefix: settings.useDatePrefix
         )
+
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.flushSave(force: true)
+        }
 
         let lastID = UserDefaults.standard.string(forKey: "diary_lastEntryID")
         if settings.openLastEntry,
@@ -46,6 +64,7 @@ final class ViewModel {
 
     func selectEntry(_ entry: Entry) {
         flushSave()
+        lastSavedContent = entry.content
         currentEntry = entry
     }
 
@@ -65,7 +84,7 @@ final class ViewModel {
     }
 
     func saveCurrentEntry() {
-        flushSave()
+        flushSave(force: true)
     }
 
     func renameCurrentEntry(to newTitle: String) {
@@ -142,11 +161,13 @@ final class ViewModel {
         }
     }
 
-    private func flushSave() {
+    private func flushSave(force: Bool = false) {
         saveTimer?.invalidate()
         guard var entry = currentEntry else { return }
+        guard force || editorText != lastSavedContent else { return }
         entry.content = editorText
         store.saveEntry(&entry)
         currentEntry = entry
+        lastSavedContent = editorText
     }
 }

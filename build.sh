@@ -14,8 +14,8 @@ mkdir -p Diary.app/Contents/MacOS
 mkdir -p Diary.app/Contents/Resources
 
 # Compile
-swiftc -o Diary.app/Contents/MacOS/Diary \
-    Sources/Diary/*.swift \
+find Sources/Diary -name "*.swift" -print0 | xargs -0 \
+    swiftc -o Diary.app/Contents/MacOS/Diary \
     -framework SwiftUI \
     -framework AppKit \
     -parse-as-library \

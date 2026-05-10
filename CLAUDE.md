@@ -72,3 +72,23 @@ For multi-step tasks, state a brief plan:
 
 
 Strong success criteria let the LLM loop independently. Weak criteria ("make it work") require constant clarification.
+
+### 5. Development Log
+
+
+
+**After every coding session, write a dev log entry.**
+
+After each modification session (not after every single edit, but after the user's request is completed), append to the "开发日记" group:
+
+- **Where**: `开发日记` group → `YYYY-MM-DD-开发日志.md` (create if missing, append if exists)
+- **Content** (all sections required):
+  - **做了什么** — what was done, feature added, bug fixed
+  - **发现了什么** — issues found, patterns noticed, edge cases discovered
+  - **做错了什么** — mistakes made, wrong assumptions, things that needed fixing
+  - **需要反思的地方** — what could have been done better, architectural concerns, design tradeoffs
+
+**Storage path**: Read from `defaults read com.diary.app diary_storagePath`, default `~/Documents/Diary/entries`.
+
+**Why**: The user wants a continuous record of development decisions, mistakes, and lessons learned.
+**How to apply**: After `./build.sh && open Diary.app` succeeds, write the log entry before reporting completion.

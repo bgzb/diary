@@ -112,6 +112,15 @@ enum LKey {
     case shortcutSettingsDesc
 
 
+    // Calendar
+    case calendar
+    case noEntriesForDate
+    case newEntryForDate
+    case noEntryToday
+    case today
+    case sun; case mon; case tue; case wed; case thu; case fri; case sat
+    case backToEntries
+
     // Editor fonts
     case fontSystemMonospaced
     case fontSFMono
@@ -183,6 +192,19 @@ enum LKey {
         case .shortcutSaveDesc: return "Save current entry"
         case .shortcutDeleteEntryDesc: return "Delete current entry"
         case .shortcutSettingsDesc: return "Open Settings"
+        case .calendar: return "Calendar"
+        case .noEntriesForDate: return "No entries for this date"
+        case .newEntryForDate: return "New entry for this date"
+        case .noEntryToday: return "You haven't captured today's beautiful moments yet!"
+        case .today: return "Today"
+        case .sun: return "Sun"
+        case .mon: return "Mon"
+        case .tue: return "Tue"
+        case .wed: return "Wed"
+        case .thu: return "Thu"
+        case .fri: return "Fri"
+        case .sat: return "Sat"
+        case .backToEntries: return "Back to Entries"
         case .fontSystemMonospaced: return "System Monospaced"
         case .fontSFMono:           return "SF Mono"
         case .fontMenlo:            return "Menlo"
@@ -255,6 +277,19 @@ enum LKey {
         case .shortcutSaveDesc: return "保存当前日记"
         case .shortcutDeleteEntryDesc: return "删除当前日记"
         case .shortcutSettingsDesc: return "打开设置"
+        case .calendar: return "日历"
+        case .noEntriesForDate: return "该日期没有日记"
+        case .newEntryForDate: return "为此日期新建日记"
+        case .noEntryToday: return "你今天还没记录下生活的美好哦！"
+        case .today: return "今天"
+        case .sun: return "日"
+        case .mon: return "一"
+        case .tue: return "二"
+        case .wed: return "三"
+        case .thu: return "四"
+        case .fri: return "五"
+        case .sat: return "六"
+        case .backToEntries: return "返回日记列表"
         case .fontSystemMonospaced: return "系统等宽"
         case .fontSFMono:           return "SF Mono"
         case .fontMenlo:            return "Menlo"
