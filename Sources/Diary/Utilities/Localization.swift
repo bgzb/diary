@@ -121,6 +121,11 @@ enum LKey {
     case sun; case mon; case tue; case wed; case thu; case fri; case sat
     case backToEntries
 
+    // Writing stats
+    case words
+    case characters
+    case streakDays(Int)
+
     // Editor fonts
     case fontSystemMonospaced
     case fontSFMono
@@ -205,6 +210,9 @@ enum LKey {
         case .fri: return "Fri"
         case .sat: return "Sat"
         case .backToEntries: return "Back to Entries"
+        case .words: return "words"
+        case .characters: return "chars"
+        case .streakDays(let v): return "\(v)-day streak"
         case .fontSystemMonospaced: return "System Monospaced"
         case .fontSFMono:           return "SF Mono"
         case .fontMenlo:            return "Menlo"
@@ -290,6 +298,9 @@ enum LKey {
         case .fri: return "五"
         case .sat: return "六"
         case .backToEntries: return "返回日记列表"
+        case .words: return "词"
+        case .characters: return "字"
+        case .streakDays(let v): return "连续写作 \(v) 天"
         case .fontSystemMonospaced: return "系统等宽"
         case .fontSFMono:           return "SF Mono"
         case .fontMenlo:            return "Menlo"

@@ -21,6 +21,38 @@ final class ViewModel {
     var currentGroupID: String { store.currentGroupID }
 
     var selectedDate: Date?
+
+    var wordCount: Int {
+        editorText.split { $0.isWhitespace || $0.isNewline }.count
+    }
+
+    var charCount: Int {
+        editorText.count
+    }
+
+    var writingStreak: Int {
+        let dates = entryDates
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+
+        let start: Date
+        if dates.contains(today) {
+            start = today
+        } else {
+            guard let yesterday = calendar.date(byAdding: .day, value: -1, to: today) else { return 0 }
+            start = yesterday
+        }
+
+        var count = 0
+        var day = start
+        while dates.contains(day) {
+            count += 1
+            guard let prev = calendar.date(byAdding: .day, value: -1, to: day) else { break }
+            day = prev
+        }
+        return count
+    }
+
     var entryDates: Set<Date> {
         Set(store.allEntryDates().map { Calendar.current.startOfDay(for: $0) })
     }

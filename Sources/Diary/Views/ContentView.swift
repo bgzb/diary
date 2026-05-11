@@ -507,6 +507,10 @@ struct ContentView: View {
                     settings: settings
                 )
                 .id(editorID)
+
+                Divider()
+                    .padding(.horizontal, 20)
+                statusBar
             } else {
                 emptyState
             }
@@ -527,6 +531,35 @@ struct ContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var statusBar: some View {
+        HStack(spacing: 0) {
+            Text("\(model.charCount) \(L.string(.characters, lang: settings.appLanguage))")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text(" · ")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+
+            Text("\(model.wordCount) \(L.string(.words, lang: settings.appLanguage))")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Spacer()
+
+            HStack(spacing: 4) {
+                Image(systemName: "flame.fill")
+                    .font(.caption2)
+                    .foregroundStyle(model.writingStreak > 0 ? Color.orange : Color.secondary)
+                Text(L.string(.streakDays(model.writingStreak), lang: settings.appLanguage))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 6)
     }
 
     // MARK: - Calendar Inspector

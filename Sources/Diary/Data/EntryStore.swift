@@ -248,8 +248,17 @@ final class EntryStore {
     }
 
     func saveEntry(_ entry: inout Entry) {
+        // Don't touch the file if content hasn't changed from what's on disk
+        if let existing = try? String(contentsOf: entry.fileURL, encoding: .utf8),
+           existing == entry.content {
+            return
+        }
         entry.modifiedAt = Date()
-        try? entry.content.write(to: entry.fileURL, atomically: true, encoding: .utf8)
+        try? entry.content.write(to: entry.fileURL, atomically: false, encoding: .utf8)
+        // Keep in-memory entries array in sync with the saved content
+        if let idx = entries.firstIndex(where: { $0.id == entry.id }) {
+            entries[idx] = entry
+        }
     }
 
     func deleteEntry(_ entry: Entry) {
