@@ -174,6 +174,8 @@ struct MarkdownEditorView: NSViewRepresentable {
         guard let textView = scrollView.documentView as? NSTextView else { return }
         guard !textView.hasMarkedText() else { return }
 
+        applyRuntimeSettings(to: textView, coordinator: context.coordinator)
+
         if textView.string != text {
             textView.string = text
             context.coordinator.renderMarkdown()
@@ -206,6 +208,32 @@ struct MarkdownEditorView: NSViewRepresentable {
             .backgroundColor: colors.selection,
             .foregroundColor: colors.text,
         ]
+    }
+
+    private func applyRuntimeSettings(to textView: NSTextView, coordinator: Coordinator) {
+        let fontSize = CGFloat(settings.editorFontSize)
+        textView.font = settings.editorFont.nsFont.withSize(fontSize)
+        textView.isContinuousSpellCheckingEnabled = settings.editorSpellCheck
+
+        let lineH = (1.9 + settings.editorLineSpacing / 10.0) * fontSize
+        let style = NSMutableParagraphStyle()
+        style.minimumLineHeight = lineH
+        style.maximumLineHeight = lineH
+        style.defaultTabInterval = CGFloat(settings.editorTabWidth * Int(fontSize))
+        style.tabStops = []
+        textView.defaultParagraphStyle = style
+
+        let colors = EditorColors.from(settings.previewTheme)
+        textView.backgroundColor = colors.bg
+        textView.textColor = colors.text
+        textView.insertionPointColor = colors.cursor
+        textView.selectedTextAttributes = [
+            .backgroundColor: colors.selection,
+            .foregroundColor: colors.text,
+        ]
+
+        coordinator.setBaseStyle(font: textView.font ?? NSFont.monospacedSystemFont(ofSize: 14, weight: .regular),
+                                  color: textView.textColor ?? .textColor)
     }
 
     // MARK: - Coordinator

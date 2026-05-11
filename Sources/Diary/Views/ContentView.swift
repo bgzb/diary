@@ -124,6 +124,9 @@ struct ContentView: View {
 
     private var sidebar: some View {
         VStack(spacing: 0) {
+            searchField
+            Divider()
+                .padding(.horizontal, 10)
             groupBanner
             Divider()
                 .padding(.horizontal, 10)
@@ -169,6 +172,54 @@ struct ContentView: View {
             .padding(.bottom, 6)
         }
         .background(sidebarBackground.ignoresSafeArea())
+    }
+
+    // MARK: - Search
+
+    private var searchField: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.tertiary)
+            TextField(L.string(.searchPlaceholder, lang: settings.appLanguage), text: Binding(
+                get: { model.searchText },
+                set: { model.searchText = $0 }
+            ))
+            .textFieldStyle(.plain)
+            .font(.system(size: 12))
+            if !model.searchText.isEmpty {
+                Menu {
+                    ForEach(SearchMode.allCases, id: \.self) { mode in
+                        Button {
+                            model.searchMode = mode
+                        } label: {
+                            HStack {
+                                Text(mode.displayName(settings.appLanguage))
+                                if model.searchMode == mode {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    Text(model.searchMode.displayName(settings.appLanguage))
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                Button {
+                    model.searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
     }
 
     // MARK: - Group Banner
@@ -317,27 +368,115 @@ struct ContentView: View {
 
     private var entriesHeader: some View {
         HStack {
-            Text(currentGroupName)
+            Text(model.isSearchActive
+                 ? L.string(.searchResults(model.totalSearchResultCount), lang: settings.appLanguage)
+                 : currentGroupName)
                 .font(.system(size: 11, weight: .bold))
                 .foregroundStyle(.secondary)
                 .tracking(0.6)
             Spacer()
-            Button {
-                model.newEntry()
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.secondary)
+            if !model.isSearchActive {
+                Button {
+                    model.newEntry()
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(L.string(.newEntry, lang: settings.appLanguage))
             }
-            .buttonStyle(.plain)
-            .help(L.string(.newEntry, lang: settings.appLanguage))
         }
         .padding(.horizontal, 14)
         .padding(.top, 10)
         .padding(.bottom, 6)
     }
 
+    @ViewBuilder
     private var entriesList: some View {
+        if model.isSearchActive {
+            searchResultsList
+        } else {
+            normalEntriesList
+        }
+    }
+
+    private var searchResultsList: some View {
+        List {
+            ForEach(model.searchResults) { group in
+                Section {
+                    ForEach(group.entries) { result in
+                        searchResultRow(result, groupName: group.groupName)
+                    }
+                } header: {
+                    Text(group.groupName)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+        }
+        .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+    }
+
+    private func searchResultRow(_ result: SearchResultEntry, groupName: String) -> some View {
+        let entry = result.entry
+        let selected = entry.id == model.currentEntry?.id
+
+        return Button {
+            showCalendarStandalone = false
+            model.selectSearchResult(entry)
+        } label: {
+            HStack(spacing: 6) {
+                Text(entry.title)
+                    .lineLimit(1)
+                    .font(.system(size: 13, weight: selected ? .medium : .regular))
+                    .foregroundStyle(selected ? .primary : .secondary)
+                Spacer()
+                if model.searchMode == .content && result.matchCount > 0 {
+                    Text("×\(result.matchCount)")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.tertiary)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(Color.primary.opacity(0.06))
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                }
+            }
+            .padding(.vertical, 3)
+            .padding(.horizontal, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .listRowBackground(selected ? sidebarTint : Color.clear)
+        .contextMenu {
+            Button {
+                model.selectEntry(entry)
+                renamingEntryID = entry.id
+                renameText = entry.title
+            } label: {
+                Label(L.string(.rename, lang: settings.appLanguage),
+                      systemImage: "pencil")
+            }
+            Divider()
+            Button {
+                model.newEntry()
+            } label: {
+                Label(L.string(.newEntry, lang: settings.appLanguage),
+                      systemImage: "square.and.pencil")
+            }
+            Divider()
+            Button(role: .destructive) {
+                model.selectEntry(entry)
+                model.pendingDelete = true
+            } label: {
+                Label(L.string(.delete, lang: settings.appLanguage),
+                      systemImage: "trash")
+            }
+        }
+    }
+
+    private var normalEntriesList: some View {
         List(selection: Binding(
             get: { model.currentEntry?.id },
             set: { id in
@@ -485,7 +624,7 @@ struct ContentView: View {
     }
 
     private var editorID: String {
-        "\(settings.previewTheme.rawValue)-\(settings.editorFontSize)-\(settings.editorFont.rawValue)-\(settings.editorLineSpacing)-\(settings.editorSpellCheck)-\(settings.editorTabWidth)"
+        "\(settings.previewTheme.rawValue)-\(settings.editorFont.rawValue)"
     }
 
     private var mainContent: some View {
@@ -572,7 +711,8 @@ struct ContentView: View {
                 selectedDate: Binding(
                     get: { model.selectedDate },
                     set: { model.selectedDate = $0 }
-                )
+                ),
+                appLanguage: settings.appLanguage
             )
             .padding(12)
 
@@ -654,8 +794,7 @@ struct ContentView: View {
                             model.selectGroup(group)
                         }
                         // Re-fetch the entry from the new current group
-                        if let reloaded = model.entries.first(where: { $0.title == entry.title &&
-                            $0.fileURL.deletingPathExtension().lastPathComponent == entry.fileURL.deletingPathExtension().lastPathComponent }) {
+                        if let reloaded = model.entries.first(where: { $0.id == entry.id }) {
                             model.selectEntry(reloaded)
                         }
                     } label: {
@@ -732,7 +871,8 @@ struct ContentView: View {
                 selectedDate: Binding(
                     get: { model.selectedDate },
                     set: { model.selectedDate = $0 }
-                )
+                ),
+                appLanguage: settings.appLanguage
             )
             .padding(.horizontal, 40)
             .padding(.bottom, 16)
@@ -804,7 +944,7 @@ struct ContentView: View {
                         if let group = model.groups.first(where: { $0.name == groupName }) {
                             model.selectGroup(group)
                         }
-                        if let reloaded = model.entries.first(where: { $0.title == entry.title }) {
+                        if let reloaded = model.entries.first(where: { $0.id == entry.id }) {
                             model.selectEntry(reloaded)
                         }
                         showCalendarStandalone = false

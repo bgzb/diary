@@ -4,6 +4,7 @@ struct CalendarView: View {
     @Binding var displayedMonth: Date
     let entryDates: Set<Date>
     @Binding var selectedDate: Date?
+    let appLanguage: AppLanguage
 
     private let calendar = Calendar.current
     private let cols = Array(repeating: GridItem(.flexible()), count: 7)
@@ -60,7 +61,7 @@ struct CalendarView: View {
                 displayedMonth = Date()
                 selectedDate = Date()
             } label: {
-                Text(L.string(.today, lang: .english))
+                Text(L.string(.today, lang: appLanguage))
                     .font(.system(size: 11, weight: .medium))
             }
             .buttonStyle(.plain)
@@ -90,7 +91,7 @@ struct CalendarView: View {
     private var weekdaySymbols: [String] {
         let syms: [LKey] = [.sun, .mon, .tue, .wed, .thu, .fri, .sat]
         let first = calendar.firstWeekday - 1
-        return (0..<7).map { L.string(syms[(first + $0) % 7], lang: .english) }
+        return (0..<7).map { L.string(syms[(first + $0) % 7], lang: appLanguage) }
     }
 
     // MARK: - Day Cell

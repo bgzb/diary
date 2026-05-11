@@ -112,6 +112,12 @@ enum LKey {
     case shortcutSettingsDesc
 
 
+    // Search
+    case searchPlaceholder
+    case searchResults(Int)
+    case searchByTitle
+    case searchByContent
+
     // Calendar
     case calendar
     case noEntriesForDate
@@ -197,6 +203,10 @@ enum LKey {
         case .shortcutSaveDesc: return "Save current entry"
         case .shortcutDeleteEntryDesc: return "Delete current entry"
         case .shortcutSettingsDesc: return "Open Settings"
+        case .searchPlaceholder: return "Search entries..."
+        case .searchResults(let v): return "\(v) results"
+        case .searchByTitle: return "Title"
+        case .searchByContent: return "Content"
         case .calendar: return "Calendar"
         case .noEntriesForDate: return "No entries for this date"
         case .newEntryForDate: return "New entry for this date"
@@ -285,6 +295,10 @@ enum LKey {
         case .shortcutSaveDesc: return "保存当前日记"
         case .shortcutDeleteEntryDesc: return "删除当前日记"
         case .shortcutSettingsDesc: return "打开设置"
+        case .searchPlaceholder: return "搜索日记..."
+        case .searchResults(let v): return "\(v) 个结果"
+        case .searchByTitle: return "标题"
+        case .searchByContent: return "内容"
         case .calendar: return "日历"
         case .noEntriesForDate: return "该日期没有日记"
         case .newEntryForDate: return "为此日期新建日记"
