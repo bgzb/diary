@@ -428,6 +428,11 @@ struct ContentView: View {
             model.selectSearchResult(entry)
         } label: {
             HStack(spacing: 6) {
+                if model.isPinned(entry) {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.orange)
+                }
                 Text(entry.title)
                     .lineLimit(1)
                     .font(.system(size: 13, weight: selected ? .medium : .regular))
@@ -450,6 +455,16 @@ struct ContentView: View {
         .buttonStyle(.plain)
         .listRowBackground(selected ? sidebarTint : Color.clear)
         .contextMenu {
+            Button {
+                model.selectEntry(entry)
+                model.togglePin(entry)
+            } label: {
+                Label(model.isPinned(entry)
+                      ? L.string(.unpinEntry, lang: settings.appLanguage)
+                      : L.string(.pinEntry, lang: settings.appLanguage),
+                      systemImage: model.isPinned(entry) ? "pin.slash" : "pin")
+            }
+            Divider()
             Button {
                 model.selectEntry(entry)
                 renamingEntryID = entry.id
@@ -504,6 +519,12 @@ struct ContentView: View {
                             }
                     } else {
                         let selected = entry.id == model.currentEntry?.id
+                        if model.isPinned(entry) {
+                            Image(systemName: "pin.fill")
+                                .font(.system(size: 9))
+                                .foregroundStyle(.orange)
+                                .padding(.trailing, 3)
+                        }
                         Text(entry.title)
                             .lineLimit(1)
                             .font(.system(size: 13, weight: selected ? .medium : .regular))
@@ -519,6 +540,16 @@ struct ContentView: View {
                         : Color.clear
                 )
                 .contextMenu {
+                    Button {
+                        model.selectEntry(entry)
+                        model.togglePin(entry)
+                    } label: {
+                        Label(model.isPinned(entry)
+                              ? L.string(.unpinEntry, lang: settings.appLanguage)
+                              : L.string(.pinEntry, lang: settings.appLanguage),
+                              systemImage: model.isPinned(entry) ? "pin.slash" : "pin")
+                    }
+                    Divider()
                     Button {
                         model.selectEntry(entry)
                         renamingEntryID = entry.id

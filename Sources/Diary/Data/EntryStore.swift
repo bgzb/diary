@@ -35,6 +35,39 @@ final class EntryStore {
     var useDatePrefix: Bool
     private var currentGroupDir: URL { baseDir.appendingPathComponent(currentGroupID) }
 
+    private var pinnedPaths: Set<String> {
+        get {
+            Set(UserDefaults.standard.stringArray(forKey: "diary_pinnedPaths") ?? [])
+        }
+        set {
+            UserDefaults.standard.set(Array(newValue), forKey: "diary_pinnedPaths")
+        }
+    }
+
+    func isPinned(_ entry: Entry) -> Bool {
+        pinnedPaths.contains(entry.fileURL.path)
+    }
+
+    func togglePin(_ entry: Entry) {
+        var set = pinnedPaths
+        if set.contains(entry.fileURL.path) {
+            set.remove(entry.fileURL.path)
+        } else {
+            set.insert(entry.fileURL.path)
+        }
+        pinnedPaths = set
+        sortEntries()
+    }
+
+    private func sortEntries() {
+        entries.sort { a, b in
+            let aPin = isPinned(a)
+            let bPin = isPinned(b)
+            if aPin != bPin { return aPin }
+            return a.title.localizedStandardCompare(b.title) == .orderedAscending
+        }
+    }
+
     init(basePath: String, useDatePrefix: Bool) {
         self.baseDir = URL(fileURLWithPath: (basePath as NSString).expandingTildeInPath)
         self.useDatePrefix = useDatePrefix
@@ -243,7 +276,7 @@ final class EntryStore {
         var entry = Entry(title: sanitized, fileURL: url)
         saveEntry(&entry)
         entries.append(entry)
-        entries.sort { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+        sortEntries()
         return entry
     }
 
@@ -269,7 +302,7 @@ final class EntryStore {
     func restoreEntry(_ entry: Entry) {
         try? entry.content.write(to: entry.fileURL, atomically: true, encoding: .utf8)
         entries.append(entry)
-        entries.sort { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+        sortEntries()
     }
 
     @discardableResult
@@ -299,6 +332,13 @@ final class EntryStore {
         try? entry.content.write(to: url, atomically: true, encoding: .utf8)
         if url.path != entry.fileURL.path {
             try? FileManager.default.removeItem(at: entry.fileURL)
+            // Migrate pin to new path
+            var set = pinnedPaths
+            if set.contains(entry.fileURL.path) {
+                set.remove(entry.fileURL.path)
+                set.insert(url.path)
+                pinnedPaths = set
+            }
         }
 
         var updated = entry
@@ -309,7 +349,7 @@ final class EntryStore {
         if let idx = entries.firstIndex(where: { $0.id == entry.id }) {
             entries[idx] = updated
         }
-        entries.sort { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+        sortEntries()
         return updated
     }
 
@@ -350,7 +390,7 @@ final class EntryStore {
                 if let cr = attrs?[.creationDate] as? Date { entry.createdAt = cr }
                 return entry
             }
-            .sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+        sortEntries()
     }
 
     private func displayTitle(from filename: String) -> String {

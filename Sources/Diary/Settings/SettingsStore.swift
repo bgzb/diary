@@ -93,7 +93,20 @@ final class SettingsStore {
     }
 
     var appLanguage: AppLanguage = .system {
-        didSet { save(appLanguage.rawValue, for: "appLanguage") }
+        didSet { save(appLanguage.rawValue, for: "appLanguage"); rescheduleReminder() }
+    }
+
+    // MARK: - Reminder
+    var reminderEnabled: Bool = false {
+        didSet { save(reminderEnabled, for: "reminderEnabled"); rescheduleReminder() }
+    }
+
+    var reminderHour: Int = 20 {
+        didSet { save(reminderHour, for: "reminderHour"); rescheduleReminder() }
+    }
+
+    var reminderMinute: Int = 0 {
+        didSet { save(reminderMinute, for: "reminderMinute"); rescheduleReminder() }
     }
 
     // MARK: - Derived
@@ -104,6 +117,13 @@ final class SettingsStore {
 
     var resolvedStoragePath: String {
         (storagePath as NSString).expandingTildeInPath
+    }
+
+    // MARK: - Reminder scheduling
+    private func rescheduleReminder() {
+        ReminderManager.schedule(
+            enabled: reminderEnabled, hour: reminderHour, minute: reminderMinute, lang: appLanguage
+        )
     }
 
     // MARK: - Init (load from UserDefaults)
@@ -128,6 +148,11 @@ final class SettingsStore {
         openLastEntry = load("openLastEntry", fallback: true)
         autoSaveInterval = load("autoSaveInterval", fallback: 1.0)
         appLanguage = loadEnum("appLanguage", fallback: .system)
+        reminderEnabled = load("reminderEnabled", fallback: false)
+        reminderHour = load("reminderHour", fallback: 20)
+        reminderMinute = load("reminderMinute", fallback: 0)
+
+        rescheduleReminder()
     }
 
     // MARK: - Persistence

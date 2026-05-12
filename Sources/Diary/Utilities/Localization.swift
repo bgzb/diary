@@ -119,6 +119,8 @@ enum LKey {
     case searchByContent
 
     // Calendar
+    case pinEntry
+    case unpinEntry
     case calendar
     case noEntriesForDate
     case newEntryForDate
@@ -126,6 +128,11 @@ enum LKey {
     case today
     case sun; case mon; case tue; case wed; case thu; case fri; case sat
     case backToEntries
+
+    // Reminder
+    case dailyReminder
+    case reminderTime
+    case reminderEnabled
 
     // Writing stats
     case words
@@ -154,6 +161,8 @@ enum LKey {
         case .createFirstEntry: return "Create Your First Entry"
         case .create: return "Create"
         case .entryName: return "Name"
+        case .pinEntry: return "Pin to Top"
+        case .unpinEntry: return "Unpin"
         case .delete: return "Delete"
         case .deleteEntryTitle: return "Delete Entry"
         case .deleteEntryMessage: return "Are you sure you want to delete this entry? This action can be undone."
@@ -227,6 +236,9 @@ enum LKey {
         case .fontSFMono:           return "SF Mono"
         case .fontMenlo:            return "Menlo"
         case .fontJetBrainsMono:    return "JetBrains Mono"
+        case .dailyReminder: return "Daily Reminder"
+        case .reminderTime: return "Reminder Time"
+        case .reminderEnabled: return "Enable daily writing reminder"
         }
     }
 
@@ -246,6 +258,8 @@ enum LKey {
         case .createFirstEntry: return "创建第一篇日记"
         case .create: return "创建"
         case .entryName: return "名称"
+        case .pinEntry: return "置顶"
+        case .unpinEntry: return "取消置顶"
         case .delete: return "删除"
         case .deleteEntryTitle: return "删除日记"
         case .deleteEntryMessage: return "确定要删除这篇日记吗？此操作可以撤销。"
@@ -319,6 +333,9 @@ enum LKey {
         case .fontSFMono:           return "SF Mono"
         case .fontMenlo:            return "Menlo"
         case .fontJetBrainsMono:    return "JetBrains Mono"
+        case .dailyReminder: return "每日提醒"
+        case .reminderTime: return "提醒时间"
+        case .reminderEnabled: return "开启每日写作提醒"
         }
     }
 }

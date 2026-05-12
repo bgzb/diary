@@ -4,6 +4,7 @@ import AppKit
 struct SettingsView: View {
     let viewModel: ViewModel
     @Bindable var settings: SettingsStore
+    @State private var showReminderPopover = false
 
     private var l: (LKey) -> String { { L.string($0, lang: settings.appLanguage) } }
 
@@ -133,6 +134,44 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle(l(.reminderEnabled), isOn: $settings.reminderEnabled)
+
+                if settings.reminderEnabled {
+                    LabeledContent(l(.reminderTime)) {
+                        Button {
+                            showReminderPopover.toggle()
+                        } label: {
+                            Text(String(format: "%02d:%02d", settings.reminderHour, settings.reminderMinute))
+                                .monospacedDigit()
+                                .frame(width: 48, alignment: .trailing)
+                        }
+                        .popover(isPresented: $showReminderPopover, arrowEdge: .trailing) {
+                            HStack(spacing: 0) {
+                                Picker("Hour", selection: $settings.reminderHour) {
+                                    ForEach(0..<24, id: \.self) { h in
+                                        Text(String(format: "%02d", h)).tag(h)
+                                    }
+                                }
+                                .frame(width: 64)
+                                Text(" : ")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                                Picker("Minute", selection: $settings.reminderMinute) {
+                                    ForEach(Array(stride(from: 0, to: 60, by: 5)), id: \.self) { m in
+                                        Text(String(format: "%02d", m)).tag(m)
+                                    }
+                                }
+                                .frame(width: 64)
+                            }
+                            .padding()
+                        }
+                    }
+                }
+            } header: {
+                Text(l(.dailyReminder))
+            }
+
+            Section {
                 Picker(l(.language),
                        selection: $settings.appLanguage) {
                     ForEach(AppLanguage.allCases, id: \.self) { lang in
@@ -200,6 +239,9 @@ struct SettingsView: View {
         settings.openLastEntry = true
         settings.autoSaveInterval = 1.0
         settings.appLanguage = .system
+        settings.reminderEnabled = false
+        settings.reminderHour = 20
+        settings.reminderMinute = 0
         viewModel.reloadStorage()
     }
 }

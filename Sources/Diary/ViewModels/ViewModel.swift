@@ -140,6 +140,17 @@ final class ViewModel {
 
     // MARK: - Entries
 
+    func isPinned(_ entry: Entry) -> Bool {
+        store.isPinned(entry)
+    }
+
+    func togglePin(_ entry: Entry) {
+        store.togglePin(entry)
+        if entry.id == currentEntry?.id {
+            currentEntry = store.entries.first(where: { $0.id == entry.id })
+        }
+    }
+
     func selectEntry(_ entry: Entry) {
         flushSave()
         lastSavedContent = entry.content
