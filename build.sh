@@ -18,6 +18,7 @@ find Sources/Diary -name "*.swift" -print0 | xargs -0 \
     swiftc -o Diary.app/Contents/MacOS/Diary \
     -framework SwiftUI \
     -framework AppKit \
+    -framework Security \
     -parse-as-library \
     -target arm64-apple-macosx14.0
 

@@ -17,21 +17,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct DiaryApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var settings = SettingsStore()
+    @State private var lockManager = LockManager()
     @State private var viewModel: ViewModel?
+
+    private var colorScheme: ColorScheme? {
+        switch settings.previewTheme {
+        case .system: return nil
+        case .light, .grey: return .light
+        case .dark: return .dark
+        }
+    }
 
     var body: some Scene {
         WindowGroup {
-            if let vm = viewModel {
-                ContentView()
-                    .environment(vm)
-                    .environment(settings)
-                    .frame(minWidth: 700, minHeight: 500)
-            } else {
-                ProgressView()
-                    .task {
-                        viewModel = ViewModel(settings: settings)
+            Group {
+                if let vm = viewModel {
+                    if lockManager.isLocked {
+                        LockScreenView()
+                            .environment(settings)
+                            .environment(lockManager)
+                            .frame(minWidth: 700, minHeight: 500)
+                    } else {
+                        ContentView()
+                            .environment(vm)
+                            .environment(settings)
+                            .environment(lockManager)
+                            .frame(minWidth: 700, minHeight: 500)
                     }
+                } else {
+                    ProgressView()
+                        .task {
+                            viewModel = ViewModel(settings: settings)
+                        }
+                }
             }
+            .preferredColorScheme(colorScheme)
         }
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unifiedCompact)
@@ -67,6 +87,7 @@ struct DiaryApp: App {
             if let vm = viewModel {
                 SettingsView(viewModel: vm, settings: settings)
                     .environment(settings)
+                    .environment(lockManager)
             }
         }
     }

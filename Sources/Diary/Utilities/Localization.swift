@@ -110,6 +110,8 @@ enum LKey {
     case shortcutSaveDesc
     case shortcutDeleteEntryDesc
     case shortcutSettingsDesc
+    case shortcutExportDesc
+    case shortcutCalendarDesc
 
 
     // Search
@@ -145,6 +147,23 @@ enum LKey {
     case words
     case characters
     case streakDays(Int)
+
+    // Password lock
+    case password
+    case setPassword
+    case changePassword
+    case removePassword
+    case lockApp
+    case unlock
+    case enterPassword
+    case currentPassword
+    case newPassword
+    case confirmPassword
+    case passwordMismatch
+    case incorrectPassword
+    case passwordRemoved
+    case enterCurrentToRemove
+    case lockShortcutDesc
 
     // Editor fonts
     case fontSystemMonospaced
@@ -219,6 +238,8 @@ enum LKey {
         case .shortcutSaveDesc: return "Save current entry"
         case .shortcutDeleteEntryDesc: return "Delete current entry"
         case .shortcutSettingsDesc: return "Open Settings"
+        case .shortcutExportDesc: return "Export current entry"
+        case .shortcutCalendarDesc: return "Show calendar"
         case .searchPlaceholder: return "Search entries..."
         case .searchResults(let v): return "\(v) results"
         case .searchByTitle: return "Title"
@@ -239,6 +260,22 @@ enum LKey {
         case .words: return "words"
         case .characters: return "chars"
         case .streakDays(let v): return "\(v)-day streak"
+        case .password: return "Password"
+        case .setPassword: return "Set Password"
+        case .changePassword: return "Change Password"
+        case .removePassword: return "Remove Password"
+        case .lockApp: return "Lock"
+        case .unlock: return "Unlock"
+        case .enterPassword: return "Enter Password"
+        case .currentPassword: return "Current Password"
+        case .newPassword: return "New Password"
+        case .confirmPassword: return "Confirm Password"
+        case .passwordMismatch: return "Passwords do not match"
+        case .incorrectPassword: return "Incorrect password"
+        case .passwordRemoved: return "Password protection has been removed."
+        case .enterCurrentToRemove: return "Enter current password to remove."
+        case .lockShortcutDesc: return "Lock the app"
+
         case .fontSystemMonospaced: return "System Monospaced"
         case .fontSFMono:           return "SF Mono"
         case .fontMenlo:            return "Menlo"
@@ -321,6 +358,8 @@ enum LKey {
         case .shortcutSaveDesc: return "保存当前日记"
         case .shortcutDeleteEntryDesc: return "删除当前日记"
         case .shortcutSettingsDesc: return "打开设置"
+        case .shortcutExportDesc: return "导出当前日记"
+        case .shortcutCalendarDesc: return "显示日历"
         case .searchPlaceholder: return "搜索日记..."
         case .searchResults(let v): return "\(v) 个结果"
         case .searchByTitle: return "标题"
@@ -341,6 +380,22 @@ enum LKey {
         case .words: return "词"
         case .characters: return "字"
         case .streakDays(let v): return "连续写作 \(v) 天"
+        case .password: return "密码"
+        case .setPassword: return "设置密码"
+        case .changePassword: return "修改密码"
+        case .removePassword: return "移除密码"
+        case .lockApp: return "锁定"
+        case .unlock: return "解锁"
+        case .enterPassword: return "输入密码"
+        case .currentPassword: return "当前密码"
+        case .newPassword: return "新密码"
+        case .confirmPassword: return "确认密码"
+        case .passwordMismatch: return "两次密码不一致"
+        case .incorrectPassword: return "密码错误"
+        case .passwordRemoved: return "密码保护已移除。"
+        case .enterCurrentToRemove: return "输入当前密码以移除保护。"
+        case .lockShortcutDesc: return "锁定应用"
+
         case .fontSystemMonospaced: return "系统等宽"
         case .fontSFMono:           return "SF Mono"
         case .fontMenlo:            return "Menlo"

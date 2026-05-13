@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @Environment(ViewModel.self) private var model
     @Environment(SettingsStore.self) private var settings
+    @Environment(LockManager.self) private var lockManager
     @Environment(\.openSettings) private var openSettings
 
     @State private var renamingEntryID: String?
@@ -44,7 +45,6 @@ struct ContentView: View {
                 }
         }
         .animation(.easeInOut(duration: 0.25), value: showCalendar)
-        .preferredColorScheme(colorScheme)
         .alert(L.string(.deleteEntryTitle, lang: settings.appLanguage), isPresented: Binding(
             get: { model.pendingDelete },
             set: { model.pendingDelete = $0 }
@@ -109,9 +109,19 @@ struct ContentView: View {
                 } label: {
                     Image(systemName: "calendar")
                 }
+                .keyboardShortcut("c", modifiers: [.command, .shift])
                 .help(L.string(.calendar, lang: settings.appLanguage))
 
                 Spacer()
+
+                if lockManager.isEnabled {
+                    Button {
+                        lockManager.lock()
+                    } label: {
+                        Image(systemName: "lock")
+                    }
+                    .help(L.string(.lockApp, lang: settings.appLanguage))
+                }
 
                 Button {
                     openSettings()
@@ -610,14 +620,6 @@ struct ContentView: View {
     }
 
     // MARK: - Main Content
-
-    private var colorScheme: ColorScheme? {
-        switch settings.previewTheme {
-        case .system: return nil
-        case .light, .grey: return .light
-        case .dark: return .dark
-        }
-    }
 
     private var sidebarBackground: Color {
         switch settings.previewTheme {

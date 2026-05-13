@@ -4,6 +4,8 @@ import AppKit
 struct SettingsView: View {
     let viewModel: ViewModel
     @Bindable var settings: SettingsStore
+    @Environment(LockManager.self) private var lockManager
+    @State private var passwordSheetMode: PasswordMode?
     private var l: (LKey) -> String { { L.string($0, lang: settings.appLanguage) } }
 
     var body: some View {
@@ -161,6 +163,23 @@ struct SettingsView: View {
             }
 
             Section {
+                if lockManager.isEnabled {
+                    Button(l(.changePassword)) {
+                        passwordSheetMode = .change
+                    }
+                    Button(l(.removePassword), role: .destructive) {
+                        passwordSheetMode = .remove
+                    }
+                } else {
+                    Button(l(.setPassword)) {
+                        passwordSheetMode = .set
+                    }
+                }
+            } header: {
+                Text(l(.password))
+            }
+
+            Section {
                 Button(l(.resetDefaults)) {
                     resetDefaults()
                 }
@@ -168,6 +187,11 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .sheet(item: $passwordSheetMode) { mode in
+            SetPasswordView(mode: mode)
+                .environment(lockManager)
+                .environment(settings)
+        }
     }
 
     // MARK: - Shortcuts
@@ -180,6 +204,10 @@ struct SettingsView: View {
                 ShortcutRow(keys: "⌘ S", label: l(.save), desc: l(.shortcutSaveDesc))
                 Divider()
                 ShortcutRow(keys: "⌘ ⌫", label: l(.deleteEntry), desc: l(.shortcutDeleteEntryDesc))
+                Divider()
+                ShortcutRow(keys: "⌘ P", label: l(.exportTitle), desc: l(.shortcutExportDesc))
+                Divider()
+                ShortcutRow(keys: "⇧ ⌘ C", label: l(.calendar), desc: l(.shortcutCalendarDesc))
                 Divider()
                 ShortcutRow(keys: "⌘ ,", label: l(.settings), desc: l(.shortcutSettingsDesc))
             } header: {
