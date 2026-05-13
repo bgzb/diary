@@ -4,8 +4,6 @@ import AppKit
 struct SettingsView: View {
     let viewModel: ViewModel
     @Bindable var settings: SettingsStore
-    @State private var showReminderPopover = false
-
     private var l: (LKey) -> String { { L.string($0, lang: settings.appLanguage) } }
 
     var body: some View {
@@ -139,31 +137,11 @@ struct SettingsView: View {
                 if settings.reminderEnabled {
                     LabeledContent(l(.reminderTime)) {
                         Button {
-                            showReminderPopover.toggle()
+                            showReminderTimeWindow()
                         } label: {
                             Text(String(format: "%02d:%02d", settings.reminderHour, settings.reminderMinute))
                                 .monospacedDigit()
                                 .frame(width: 48, alignment: .trailing)
-                        }
-                        .popover(isPresented: $showReminderPopover, arrowEdge: .trailing) {
-                            HStack(spacing: 0) {
-                                Picker("Hour", selection: $settings.reminderHour) {
-                                    ForEach(0..<24, id: \.self) { h in
-                                        Text(String(format: "%02d", h)).tag(h)
-                                    }
-                                }
-                                .frame(width: 64)
-                                Text(" : ")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundStyle(.secondary)
-                                Picker("Minute", selection: $settings.reminderMinute) {
-                                    ForEach(Array(stride(from: 0, to: 60, by: 5)), id: \.self) { m in
-                                        Text(String(format: "%02d", m)).tag(m)
-                                    }
-                                }
-                                .frame(width: 64)
-                            }
-                            .padding()
                         }
                     }
                 }
@@ -212,6 +190,32 @@ struct SettingsView: View {
     }
 
     // MARK: - Actions
+
+    private func showReminderTimeWindow() {
+        let isChinese = settings.appLanguage.resolved == .chinese
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 220, height: 360),
+            styleMask: [.titled, .closable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = isChinese ? "选择时间" : "Select Time"
+        window.titlebarAppearsTransparent = true
+        window.isMovableByWindowBackground = true
+        window.center()
+        window.isReleasedWhenClosed = false
+
+        window.contentView = NSHostingView(rootView: ReminderTimePickerView(
+            hour: $settings.reminderHour,
+            minute: $settings.reminderMinute,
+            language: settings.appLanguage,
+            onDismiss: { [weak window] in
+                window?.close()
+            }
+        ))
+
+        window.makeKeyAndOrderFront(nil)
+    }
 
     private func browseStoragePath() {
         let panel = NSOpenPanel()
