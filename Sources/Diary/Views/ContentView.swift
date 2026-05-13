@@ -36,11 +36,14 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 280)
         } detail: {
             mainContent
-                .inspector(isPresented: $showCalendar) {
-                    calendarInspector
-                        .inspectorColumnWidth(min: 250, ideal: 280, max: 340)
+                .overlay(alignment: .trailing) {
+                    if showCalendar {
+                        calendarPanel
+                            .transition(.move(edge: .trailing))
+                    }
                 }
         }
+        .animation(.easeInOut(duration: 0.25), value: showCalendar)
         .preferredColorScheme(colorScheme)
         .alert(L.string(.deleteEntryTitle, lang: settings.appLanguage), isPresented: Binding(
             get: { model.pendingDelete },
@@ -730,6 +733,19 @@ struct ContentView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 6)
+    }
+
+    // MARK: - Calendar Panel
+
+    private var calendarPanel: some View {
+        calendarInspector
+            .frame(width: 280)
+            .background(contentBackground)
+            .overlay(alignment: .leading) {
+                Rectangle()
+                    .fill(Color.primary.opacity(0.12))
+                    .frame(width: 1)
+            }
     }
 
     // MARK: - Calendar Inspector

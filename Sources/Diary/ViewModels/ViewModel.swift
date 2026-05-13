@@ -267,9 +267,9 @@ final class ViewModel {
 
     // MARK: - Export
 
-    func export(as format: ExportFormat) {
+    func export() {
         guard let entry = currentEntry else { return }
-        ExportManager.export(entry: entry, format: format, settings: settings)
+        ExportManager.export(entry: entry, settings: settings)
     }
 
     // MARK: - Search

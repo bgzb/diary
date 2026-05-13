@@ -31,13 +31,34 @@ enum ExportFormat: CaseIterable {
 
 enum ExportManager {
 
-    static func export(entry: Entry, format: ExportFormat, settings: SettingsStore) {
+    static func export(entry: Entry, settings: SettingsStore) {
         let panel = NSSavePanel()
         panel.title = L.string(.exportTitle, lang: settings.appLanguage)
-        panel.nameFieldStringValue = "\(entry.title).\(format.fileExtension)"
-        panel.allowedContentTypes = [format.utType]
+        panel.nameFieldStringValue = "\(entry.title).txt"
+        panel.allowedContentTypes = ExportFormat.allCases.map { $0.utType }
+
+        // Format picker accessory view
+        let popup = NSPopUpButton(frame: NSRect(x: 78, y: 3, width: 182, height: 22))
+        popup.font = .systemFont(ofSize: NSFont.systemFontSize)
+        for fmt in ExportFormat.allCases {
+            popup.addItem(withTitle: fmt.displayName(settings.appLanguage))
+            popup.lastItem?.representedObject = fmt
+        }
+
+        let fmtLabel = NSTextField(labelWithString:
+            settings.appLanguage.resolved == .chinese ? "格式：" : "Format:")
+        fmtLabel.frame = NSRect(x: 0, y: 6, width: 74, height: 17)
+        fmtLabel.alignment = .right
+        fmtLabel.font = .systemFont(ofSize: 11)
+
+        let accessory = NSView(frame: NSRect(x: 0, y: 0, width: 270, height: 30))
+        accessory.addSubview(fmtLabel)
+        accessory.addSubview(popup)
+        panel.accessoryView = accessory
 
         guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        let format = popup.selectedItem?.representedObject as? ExportFormat ?? .text
 
         switch format {
         case .text:

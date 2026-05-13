@@ -56,11 +56,10 @@ struct DiaryApp: App {
                 .keyboardShortcut("d", modifiers: .command)
             }
             CommandMenu(L.string(.exportMenu, lang: settings.appLanguage)) {
-                ForEach(ExportFormat.allCases, id: \.self) { format in
-                    Button(format.displayName(settings.appLanguage)) {
-                        viewModel?.export(as: format)
-                    }
+                Button(L.string(.exportTitle, lang: settings.appLanguage)) {
+                    viewModel?.export()
                 }
+                .keyboardShortcut("p", modifiers: .command)
             }
         }
 
