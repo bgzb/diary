@@ -265,6 +265,13 @@ final class ViewModel {
         lastSavedContent = editorText
     }
 
+    // MARK: - Export
+
+    func export(as format: ExportFormat) {
+        guard let entry = currentEntry else { return }
+        ExportManager.export(entry: entry, format: format, settings: settings)
+    }
+
     // MARK: - Search
 
     private var searchTimer: Timer?

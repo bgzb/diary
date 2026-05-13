@@ -429,9 +429,9 @@ struct ContentView: View {
         } label: {
             HStack(spacing: 6) {
                 if model.isPinned(entry) {
-                    Image(systemName: "pin.fill")
+                    Image(systemName: "star.fill")
                         .font(.system(size: 9))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(.yellow)
                 }
                 Text(entry.title)
                     .lineLimit(1)
@@ -462,7 +462,7 @@ struct ContentView: View {
                 Label(model.isPinned(entry)
                       ? L.string(.unpinEntry, lang: settings.appLanguage)
                       : L.string(.pinEntry, lang: settings.appLanguage),
-                      systemImage: model.isPinned(entry) ? "pin.slash" : "pin")
+                      systemImage: model.isPinned(entry) ? "star.slash" : "star")
             }
             Divider()
             Button {
@@ -520,9 +520,9 @@ struct ContentView: View {
                     } else {
                         let selected = entry.id == model.currentEntry?.id
                         if model.isPinned(entry) {
-                            Image(systemName: "pin.fill")
+                            Image(systemName: "star.fill")
                                 .font(.system(size: 9))
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(.yellow)
                                 .padding(.trailing, 3)
                         }
                         Text(entry.title)
@@ -547,7 +547,7 @@ struct ContentView: View {
                         Label(model.isPinned(entry)
                               ? L.string(.unpinEntry, lang: settings.appLanguage)
                               : L.string(.pinEntry, lang: settings.appLanguage),
-                              systemImage: model.isPinned(entry) ? "pin.slash" : "pin")
+                              systemImage: model.isPinned(entry) ? "star.slash" : "star")
                     }
                     Divider()
                     Button {

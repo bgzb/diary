@@ -134,6 +134,13 @@ enum LKey {
     case reminderTime
     case reminderEnabled
 
+    // Export
+    case exportMenu
+    case exportTitle
+    case exportText
+    case exportHTML
+    case exportPDF
+
     // Writing stats
     case words
     case characters
@@ -236,6 +243,11 @@ enum LKey {
         case .fontSFMono:           return "SF Mono"
         case .fontMenlo:            return "Menlo"
         case .fontJetBrainsMono:    return "JetBrains Mono"
+        case .exportMenu: return "Export"
+        case .exportTitle: return "Export Entry"
+        case .exportText: return "Plain Text"
+        case .exportHTML: return "HTML"
+        case .exportPDF:  return "PDF"
         case .dailyReminder: return "Daily Reminder"
         case .reminderTime: return "Reminder Time"
         case .reminderEnabled: return "Enable daily writing reminder"
@@ -333,6 +345,11 @@ enum LKey {
         case .fontSFMono:           return "SF Mono"
         case .fontMenlo:            return "Menlo"
         case .fontJetBrainsMono:    return "JetBrains Mono"
+        case .exportMenu: return "导出"
+        case .exportTitle: return "导出日记"
+        case .exportText: return "纯文本"
+        case .exportHTML: return "HTML"
+        case .exportPDF:  return "PDF"
         case .dailyReminder: return "每日提醒"
         case .reminderTime: return "提醒时间"
         case .reminderEnabled: return "开启每日写作提醒"
