@@ -112,6 +112,19 @@ enum LKey {
     case shortcutSettingsDesc
     case shortcutExportDesc
     case shortcutCalendarDesc
+    case shortcutCustomizeHint
+    case shortcutRecording
+    case shortcutResetAll
+    case shortcutActionNewEntry
+    case shortcutActionSave
+    case shortcutActionDelete
+    case shortcutActionExport
+    case shortcutActionCalendar
+    case noShortcut
+
+    // Settings sections
+    case behavior
+    case appearanceSection
 
 
     // Search
@@ -152,7 +165,7 @@ enum LKey {
     case password
     case setPassword
     case changePassword
-    case removePassword
+    case turnOffPassword
     case lockApp
     case unlock
     case enterPassword
@@ -164,6 +177,16 @@ enum LKey {
     case passwordRemoved
     case enterCurrentToRemove
     case lockShortcutDesc
+    case forgotPassword
+    case setNewPassword
+    case entryLocked
+    case lockEntry
+    case lockGroup
+    case unlockEntry
+    case unlockGroup
+    case groupLocked
+    case groupLockedTitle
+    case lockEntryHint
 
     // Editor fonts
     case fontSystemMonospaced
@@ -240,6 +263,17 @@ enum LKey {
         case .shortcutSettingsDesc: return "Open Settings"
         case .shortcutExportDesc: return "Export current entry"
         case .shortcutCalendarDesc: return "Show calendar"
+        case .shortcutCustomizeHint: return "Click to rebind"
+        case .shortcutRecording: return "Recording… press a key"
+        case .shortcutResetAll: return "Reset All Shortcuts to Defaults"
+        case .shortcutActionNewEntry: return "New Entry"
+        case .shortcutActionSave: return "Save"
+        case .shortcutActionDelete: return "Delete Entry"
+        case .shortcutActionExport: return "Export"
+        case .shortcutActionCalendar: return "Calendar"
+        case .noShortcut: return "None"
+        case .behavior: return "Behavior"
+        case .appearanceSection: return "Appearance"
         case .searchPlaceholder: return "Search entries..."
         case .searchResults(let v): return "\(v) results"
         case .searchByTitle: return "Title"
@@ -263,7 +297,7 @@ enum LKey {
         case .password: return "Password"
         case .setPassword: return "Set Password"
         case .changePassword: return "Change Password"
-        case .removePassword: return "Remove Password"
+        case .turnOffPassword: return "Turn Off Password"
         case .lockApp: return "Lock"
         case .unlock: return "Unlock"
         case .enterPassword: return "Enter Password"
@@ -275,6 +309,16 @@ enum LKey {
         case .passwordRemoved: return "Password protection has been removed."
         case .enterCurrentToRemove: return "Enter current password to remove."
         case .lockShortcutDesc: return "Lock the app"
+        case .forgotPassword: return "Forgot Password"
+        case .setNewPassword: return "Set New Password"
+        case .entryLocked: return "This entry is locked"
+        case .lockEntry: return "Lock Entry"
+        case .lockGroup: return "Lock Group"
+        case .unlockEntry: return "Unlock Entry"
+        case .unlockGroup: return "Unlock Group"
+        case .groupLocked: return "Group locked"
+        case .groupLockedTitle: return "This group is locked"
+        case .lockEntryHint: return "Set a password in Settings to lock entries."
 
         case .fontSystemMonospaced: return "System Monospaced"
         case .fontSFMono:           return "SF Mono"
@@ -360,6 +404,17 @@ enum LKey {
         case .shortcutSettingsDesc: return "打开设置"
         case .shortcutExportDesc: return "导出当前日记"
         case .shortcutCalendarDesc: return "显示日历"
+        case .shortcutCustomizeHint: return "点击重新绑定"
+        case .shortcutRecording: return "正在录制… 按下按键"
+        case .shortcutResetAll: return "重置所有快捷键为默认值"
+        case .shortcutActionNewEntry: return "新建日记"
+        case .shortcutActionSave: return "保存"
+        case .shortcutActionDelete: return "删除日记"
+        case .shortcutActionExport: return "导出"
+        case .shortcutActionCalendar: return "日历"
+        case .noShortcut: return "无"
+        case .behavior: return "行为"
+        case .appearanceSection: return "外观"
         case .searchPlaceholder: return "搜索日记..."
         case .searchResults(let v): return "\(v) 个结果"
         case .searchByTitle: return "标题"
@@ -383,7 +438,7 @@ enum LKey {
         case .password: return "密码"
         case .setPassword: return "设置密码"
         case .changePassword: return "修改密码"
-        case .removePassword: return "移除密码"
+        case .turnOffPassword: return "关闭密码"
         case .lockApp: return "锁定"
         case .unlock: return "解锁"
         case .enterPassword: return "输入密码"
@@ -395,6 +450,16 @@ enum LKey {
         case .passwordRemoved: return "密码保护已移除。"
         case .enterCurrentToRemove: return "输入当前密码以移除保护。"
         case .lockShortcutDesc: return "锁定应用"
+        case .forgotPassword: return "忘记密码"
+        case .setNewPassword: return "设置新密码"
+        case .entryLocked: return "此日记已锁定"
+        case .lockEntry: return "锁定日记"
+        case .lockGroup: return "锁定分组"
+        case .unlockEntry: return "解锁日记"
+        case .unlockGroup: return "解锁分组"
+        case .groupLocked: return "分组已锁定"
+        case .groupLockedTitle: return "此分组已锁定"
+        case .lockEntryHint: return "请先在设置中设置密码以使用锁定功能"
 
         case .fontSystemMonospaced: return "系统等宽"
         case .fontSFMono:           return "SF Mono"

@@ -18,6 +18,10 @@ struct ContentView: View {
     @FocusState private var groupFieldFocused: Bool
 
     @State private var newEntryDialogName = ""
+    @State private var unlockPassword = ""
+    @State private var unlockError: String?
+    @State private var groupUnlockPassword = ""
+    @State private var groupUnlockError: String?
     @State private var showCalendar = false
     @State private var showCalendarStandalone = false
     @State private var displayedInspectorMonth = Date()
@@ -31,6 +35,9 @@ struct ContentView: View {
         let _ = settings.editorLineSpacing
         let _ = settings.editorSpellCheck
         let _ = settings.editorTabWidth
+        let _ = lockManager.contentUnlocked
+        let _ = lockManager.unlockedGroupIDs
+        let _ = model.lockVersion
 
         NavigationSplitView {
             sidebar
@@ -63,17 +70,11 @@ struct ContentView: View {
         } message: {
             Text(L.string(.deleteEntryMessage, lang: settings.appLanguage))
         }
-        .alert(L.string(.newEntry, lang: settings.appLanguage), isPresented: Binding(
+        .sheet(isPresented: Binding(
             get: { model.showNewEntryDialog },
             set: { model.showNewEntryDialog = $0 }
         )) {
-            TextField(L.string(.entryName, lang: settings.appLanguage), text: $newEntryDialogName)
-            Button(L.string(.create, lang: settings.appLanguage)) {
-                model.createEntry(name: newEntryDialogName)
-            }
-            Button(L.string(.cancel, lang: settings.appLanguage), role: .cancel) {
-                newEntryDialogName = ""
-            }
+            newEntrySheet
         }
         .onChange(of: showCalendar) { _, visible in
             if !visible {
@@ -109,7 +110,8 @@ struct ContentView: View {
                 } label: {
                     Image(systemName: "calendar")
                 }
-                .keyboardShortcut("c", modifiers: [.command, .shift])
+                .keyboardShortcut(settings.shortcutConfig(for: ShortcutAction.calendar).keyEquivalent,
+                                  modifiers: settings.shortcutConfig(for: ShortcutAction.calendar).eventModifiers)
                 .help(L.string(.calendar, lang: settings.appLanguage))
 
                 Spacer()
@@ -259,6 +261,12 @@ struct ContentView: View {
                     Text(currentGroupName)
                         .font(.system(size: 12, weight: .medium))
                         .lineLimit(1)
+                    if let group = model.groups.first(where: { $0.id == model.currentGroupID }),
+                       model.isGroupLocked(group) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.secondary)
+                    }
                     Spacer()
                     if groupsExpanded {
                         Button {
@@ -345,6 +353,11 @@ struct ContentView: View {
                         .lineLimit(1)
                         .foregroundStyle(isCurrent ? .primary : .secondary)
                 }
+                if model.isGroupLocked(group) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
+                }
                 Spacer()
                 if isCurrent {
                     Circle()
@@ -359,6 +372,15 @@ struct ContentView: View {
         }
         .buttonStyle(.plain)
         .contextMenu {
+            Button {
+                model.toggleGroupLock(group)
+            } label: {
+                Label(model.isGroupLocked(group)
+                      ? L.string(.unlockGroup, lang: settings.appLanguage)
+                      : L.string(.lockGroup, lang: settings.appLanguage),
+                      systemImage: model.isGroupLocked(group) ? "lock.open" : "lock")
+            }
+            Divider()
             Button {
                 renamingGroupID = group.id
                 renamingGroupText = group.name
@@ -409,9 +431,24 @@ struct ContentView: View {
     private var entriesList: some View {
         if model.isSearchActive {
             searchResultsList
+        } else if isCurrentGroupLocked {
+            lockedGroupSidebarHint
         } else {
             normalEntriesList
         }
+    }
+
+    private var lockedGroupSidebarHint: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 20, weight: .ultraLight))
+                .foregroundStyle(.tertiary)
+            Text(L.string(.groupLocked, lang: settings.appLanguage))
+                .font(.system(size: 11))
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.top, 40)
     }
 
     private var searchResultsList: some View {
@@ -446,6 +483,11 @@ struct ContentView: View {
                         .font(.system(size: 9))
                         .foregroundStyle(.yellow)
                 }
+                if model.isEntryLocked(entry) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
+                }
                 Text(entry.title)
                     .lineLimit(1)
                     .font(.system(size: 13, weight: selected ? .medium : .regular))
@@ -476,6 +518,16 @@ struct ContentView: View {
                       ? L.string(.unpinEntry, lang: settings.appLanguage)
                       : L.string(.pinEntry, lang: settings.appLanguage),
                       systemImage: model.isPinned(entry) ? "star.slash" : "star")
+            }
+            Divider()
+            Button {
+                model.selectEntry(entry)
+                model.toggleEntryLock(entry)
+            } label: {
+                Label(model.isEntryLocked(entry)
+                      ? L.string(.unlockEntry, lang: settings.appLanguage)
+                      : L.string(.lockEntry, lang: settings.appLanguage),
+                      systemImage: model.isEntryLocked(entry) ? "lock.open" : "lock")
             }
             Divider()
             Button {
@@ -538,6 +590,12 @@ struct ContentView: View {
                                 .foregroundStyle(.yellow)
                                 .padding(.trailing, 3)
                         }
+                        if model.isEntryLocked(entry) {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 9))
+                                .foregroundStyle(.secondary)
+                                .padding(.trailing, 3)
+                        }
                         Text(entry.title)
                             .lineLimit(1)
                             .font(.system(size: 13, weight: selected ? .medium : .regular))
@@ -561,6 +619,16 @@ struct ContentView: View {
                               ? L.string(.unpinEntry, lang: settings.appLanguage)
                               : L.string(.pinEntry, lang: settings.appLanguage),
                               systemImage: model.isPinned(entry) ? "star.slash" : "star")
+                    }
+                    Divider()
+                    Button {
+                        model.selectEntry(entry)
+                        model.toggleEntryLock(entry)
+                    } label: {
+                        Label(model.isEntryLocked(entry)
+                              ? L.string(.unlockEntry, lang: settings.appLanguage)
+                              : L.string(.lockEntry, lang: settings.appLanguage),
+                              systemImage: model.isEntryLocked(entry) ? "lock.open" : "lock")
                     }
                     Divider()
                     Button {
@@ -663,29 +731,42 @@ struct ContentView: View {
         "\(settings.previewTheme.rawValue)-\(settings.editorFont.rawValue)"
     }
 
+    private var isCurrentGroupLocked: Bool {
+        if let group = model.groups.first(where: { $0.id == model.currentGroupID }) {
+            return model.isGroupLocked(group) && !lockManager.isGroupUnlocked(group.id)
+        }
+        return false
+    }
+
     private var mainContent: some View {
         VStack(spacing: 0) {
             if showCalendarStandalone {
                 calendarStandaloneView
+            } else if isCurrentGroupLocked {
+                groupLockedOverlay
             } else if let entry = model.currentEntry {
-                Text(entry.title)
-                    .font(.system(size: 28, weight: .bold))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 12)
-                Rectangle()
-                    .fill(Color.primary.opacity(0.12))
-                    .frame(height: 1)
-                MarkdownEditorView(
-                    text: Binding(get: { model.editorText }, set: { model.editorText = $0 }),
-                    settings: settings
-                )
-                .id(editorID)
+                if model.isEntryLocked(entry) && !lockManager.contentUnlocked {
+                    lockedEntryOverlay
+                } else {
+                    Text(entry.title)
+                        .font(.system(size: 28, weight: .bold))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                        .padding(.bottom, 12)
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.12))
+                        .frame(height: 1)
+                    MarkdownEditorView(
+                        text: Binding(get: { model.editorText }, set: { model.editorText = $0 }),
+                        settings: settings
+                    )
+                    .id(editorID)
 
-                Divider()
-                    .padding(.horizontal, 20)
-                statusBar
+                    Divider()
+                        .padding(.horizontal, 20)
+                    statusBar
+                }
             } else {
                 emptyState
             }
@@ -1024,6 +1105,153 @@ struct ContentView: View {
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
             }
+        }
+    }
+
+    // MARK: - New Entry Sheet
+
+    private var newEntrySheet: some View {
+        VStack(spacing: 16) {
+            Text(L.string(.newEntry, lang: settings.appLanguage))
+                .font(.title3)
+                .fontWeight(.semibold)
+
+            TextField(L.string(.entryName, lang: settings.appLanguage), text: $newEntryDialogName)
+                .textFieldStyle(.roundedBorder)
+
+            Toggle(isOn: Binding(
+                get: { model.newEntryLocked },
+                set: { model.newEntryLocked = $0 }
+            )) {
+                Label(L.string(.lockEntry, lang: settings.appLanguage),
+                      systemImage: "lock")
+            }
+            .disabled(!lockManager.hasPassword)
+
+            if !lockManager.hasPassword {
+                Text(L.string(.lockEntryHint, lang: settings.appLanguage))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack {
+                Button(L.string(.cancel, lang: settings.appLanguage), role: .cancel) {
+                    newEntryDialogName = ""
+                    model.newEntryLocked = false
+                    model.showNewEntryDialog = false
+                }
+                .keyboardShortcut(.escape)
+
+                Spacer()
+
+                Button(L.string(.create, lang: settings.appLanguage)) {
+                    model.createEntry(name: newEntryDialogName, lock: model.newEntryLocked)
+                    newEntryDialogName = ""
+                    model.newEntryLocked = false
+                    model.showNewEntryDialog = false
+                }
+                .keyboardShortcut(.return)
+                .disabled(newEntryDialogName.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding(20)
+        .frame(width: 340)
+    }
+
+    // MARK: - Group Locked Overlay
+
+    private var groupLockedOverlay: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            Image(systemName: "lock.fill")
+                .font(.system(size: 48, weight: .ultraLight))
+                .foregroundStyle(.tertiary)
+
+            Text(L.string(.groupLockedTitle, lang: settings.appLanguage))
+                .font(.title3)
+                .foregroundStyle(.secondary)
+
+            SecureField(L.string(.enterPassword, lang: settings.appLanguage), text: $groupUnlockPassword)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 240)
+
+            Button {
+                attemptGroupUnlock()
+            } label: {
+                Label(L.string(.unlock, lang: settings.appLanguage), systemImage: "lock.open")
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .disabled(groupUnlockPassword.isEmpty)
+
+            if let error = groupUnlockError {
+                Text(error)
+                    .foregroundColor(.red)
+                    .font(.caption)
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func attemptGroupUnlock() {
+        guard let group = model.groups.first(where: { $0.id == model.currentGroupID }) else { return }
+        if lockManager.unlockGroup(group.id, with: groupUnlockPassword) {
+            groupUnlockPassword = ""
+            groupUnlockError = nil
+        } else {
+            groupUnlockError = L.string(.incorrectPassword, lang: settings.appLanguage)
+            groupUnlockPassword = ""
+        }
+    }
+
+    // MARK: - Locked Entry Overlay
+
+    private var lockedEntryOverlay: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            Image(systemName: "lock.fill")
+                .font(.system(size: 48, weight: .ultraLight))
+                .foregroundStyle(.tertiary)
+
+            Text(L.string(.entryLocked, lang: settings.appLanguage))
+                .font(.title3)
+                .foregroundStyle(.secondary)
+
+            SecureField(L.string(.enterPassword, lang: settings.appLanguage), text: $unlockPassword)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 240)
+
+            Button {
+                attemptContentUnlock()
+            } label: {
+                Label(L.string(.unlock, lang: settings.appLanguage), systemImage: "lock.open")
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .disabled(unlockPassword.isEmpty)
+
+            if let error = unlockError {
+                Text(error)
+                    .foregroundColor(.red)
+                    .font(.caption)
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func attemptContentUnlock() {
+        if lockManager.unlockContent(with: unlockPassword) {
+            unlockPassword = ""
+            unlockError = nil
+        } else {
+            unlockError = L.string(.incorrectPassword, lang: settings.appLanguage)
+            unlockPassword = ""
         }
     }
 }

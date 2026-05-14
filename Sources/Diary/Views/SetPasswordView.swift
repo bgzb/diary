@@ -3,7 +3,7 @@ import SwiftUI
 enum PasswordMode: Identifiable {
     case set
     case change
-    case remove
+    case turnOff
 
     var id: Self { self }
 }
@@ -24,7 +24,7 @@ struct SetPasswordView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: mode == .remove ? "lock.open" : "lock.shield")
+            Image(systemName: mode == .turnOff ? "lock.open" : "lock.shield")
                 .font(.system(size: 32))
                 .foregroundStyle(.secondary)
 
@@ -32,7 +32,7 @@ struct SetPasswordView: View {
                 .font(.title3)
                 .fontWeight(.semibold)
 
-            if mode == .change || mode == .remove {
+            if mode == .change || mode == .turnOff {
                 SecureField(l(.currentPassword), text: $currentPassword)
                     .textFieldStyle(.roundedBorder)
             }
@@ -73,7 +73,7 @@ struct SetPasswordView: View {
         switch mode {
         case .set: return l(.setPassword)
         case .change: return l(.changePassword)
-        case .remove: return l(.removePassword)
+        case .turnOff: return l(.turnOffPassword)
         }
     }
 
@@ -81,7 +81,7 @@ struct SetPasswordView: View {
         switch mode {
         case .set: return l(.setPassword)
         case .change: return l(.changePassword)
-        case .remove: return l(.removePassword)
+        case .turnOff: return l(.turnOffPassword)
         }
     }
 
@@ -89,7 +89,7 @@ struct SetPasswordView: View {
         switch mode {
         case .set, .change:
             return newPassword.isEmpty || confirmPassword.isEmpty
-        case .remove:
+        case .turnOff:
             return currentPassword.isEmpty
         }
     }
@@ -112,7 +112,7 @@ struct SetPasswordView: View {
             lockManager.setPassword(newPassword)
             dismiss()
 
-        case .remove:
+        case .turnOff:
             guard lockManager.verify(currentPassword) else {
                 errorMessage = l(.incorrectPassword)
                 return

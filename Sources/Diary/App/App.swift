@@ -61,25 +61,29 @@ struct DiaryApp: App {
                 Button(L.string(.newEntry, lang: settings.appLanguage)) {
                     viewModel?.newEntry()
                 }
-                .keyboardShortcut("n", modifiers: .command)
+                .keyboardShortcut(settings.shortcutConfig(for: ShortcutAction.newEntry).keyEquivalent,
+                                  modifiers: settings.shortcutConfig(for: ShortcutAction.newEntry).eventModifiers)
             }
             CommandGroup(replacing: .saveItem) {
                 Button(L.string(.save, lang: settings.appLanguage)) {
                     viewModel?.saveCurrentEntry()
                 }
-                .keyboardShortcut("s", modifiers: .command)
+                .keyboardShortcut(settings.shortcutConfig(for: ShortcutAction.save).keyEquivalent,
+                                  modifiers: settings.shortcutConfig(for: ShortcutAction.save).eventModifiers)
             }
             CommandMenu(L.string(.entryMenu, lang: settings.appLanguage)) {
                 Button(L.string(.deleteEntry, lang: settings.appLanguage)) {
                     viewModel?.pendingDelete = true
                 }
-                .keyboardShortcut("d", modifiers: .command)
+                .keyboardShortcut(settings.shortcutConfig(for: ShortcutAction.deleteEntry).keyEquivalent,
+                                  modifiers: settings.shortcutConfig(for: ShortcutAction.deleteEntry).eventModifiers)
             }
             CommandMenu(L.string(.exportMenu, lang: settings.appLanguage)) {
                 Button(L.string(.exportTitle, lang: settings.appLanguage)) {
                     viewModel?.export()
                 }
-                .keyboardShortcut("p", modifiers: .command)
+                .keyboardShortcut(settings.shortcutConfig(for: ShortcutAction.export).keyEquivalent,
+                                  modifiers: settings.shortcutConfig(for: ShortcutAction.export).eventModifiers)
             }
         }
 
@@ -88,6 +92,7 @@ struct DiaryApp: App {
                 SettingsView(viewModel: vm, settings: settings)
                     .environment(settings)
                     .environment(lockManager)
+                    .preferredColorScheme(colorScheme)
             }
         }
     }

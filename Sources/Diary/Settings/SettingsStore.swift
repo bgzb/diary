@@ -1,6 +1,70 @@
 import SwiftUI
 import Observation
 
+// MARK: - Shortcut Config
+
+struct ShortcutAction {
+    static let newEntry = "newEntry"
+    static let save = "save"
+    static let deleteEntry = "deleteEntry"
+    static let export = "export"
+    static let calendar = "calendar"
+
+    static let all: [(id: String, defaultKey: String, defaultModifiers: EventModifiers)] = [
+        (newEntry, "n", .command),
+        (save, "s", .command),
+        (deleteEntry, "d", .command),
+        (export, "p", .command),
+        (calendar, "c", [.command, .shift]),
+    ]
+}
+
+struct ShortcutConfig: Codable, Equatable {
+    var key: String
+    var modifiers: Int
+
+    var displayString: String {
+        var parts: [String] = []
+        let m = EventModifiers(rawValue: modifiers)
+        if m.contains(.command) { parts.append("⌘") }
+        if m.contains(.option) { parts.append("⌥") }
+        if m.contains(.control) { parts.append("⌃") }
+        if m.contains(.shift) { parts.append("⇧") }
+
+        switch key {
+        case String(Character(UnicodeScalar(NSBackspaceCharacter)!)):
+            parts.append("⌫")
+        case String(Character(UnicodeScalar(NSDeleteCharacter)!)):
+            parts.append("⌦")
+        case String(Character(UnicodeScalar(NSCarriageReturnCharacter)!)):
+            parts.append("↩")
+        case String(Character(UnicodeScalar(NSTabCharacter)!)):
+            parts.append("⇥")
+        case String(Character(UnicodeScalar(27))):
+            parts.append("⎋")
+        case " ":
+            parts.append("␣")
+        default:
+            parts.append(key.uppercased())
+        }
+        return parts.joined(separator: " ")
+    }
+
+    var keyEquivalent: KeyEquivalent {
+        KeyEquivalent(Character(key).firstCharacter)
+    }
+
+    var eventModifiers: EventModifiers {
+        EventModifiers(rawValue: modifiers)
+    }
+}
+
+private extension Character {
+    var firstCharacter: Character { self }
+}
+
+// MARK: - Preview Theme
+
 enum PreviewTheme: String, CaseIterable {
     case system = "System"
     case light = "Light"
@@ -109,6 +173,30 @@ final class SettingsStore {
         didSet { save(reminderMinute, for: "reminderMinute"); rescheduleReminder() }
     }
 
+    // MARK: - Shortcuts
+    var shortcuts: [String: ShortcutConfig] = [:] {
+        didSet { saveShortcuts() }
+    }
+
+    func shortcutConfig(for action: String) -> ShortcutConfig {
+        shortcuts[action] ?? defaultShortcut(for: action)
+    }
+
+    func defaultShortcut(for action: String) -> ShortcutConfig {
+        guard let entry = ShortcutAction.all.first(where: { $0.id == action }) else {
+            return ShortcutConfig(key: " ", modifiers: 0)
+        }
+        return ShortcutConfig(key: entry.defaultKey, modifiers: Int(entry.defaultModifiers.rawValue))
+    }
+
+    func resetShortcuts() {
+        var defaults: [String: ShortcutConfig] = [:]
+        for entry in ShortcutAction.all {
+            defaults[entry.id] = ShortcutConfig(key: entry.defaultKey, modifiers: Int(entry.defaultModifiers.rawValue))
+        }
+        shortcuts = defaults
+    }
+
     // MARK: - Derived
     var defaultStoragePath: String {
         FileManager.default.homeDirectoryForCurrentUser
@@ -152,11 +240,25 @@ final class SettingsStore {
         reminderHour = load("reminderHour", fallback: 20)
         reminderMinute = load("reminderMinute", fallback: 0)
 
+        // Load shortcuts
+        if let data = d.data(forKey: "diary_shortcuts"),
+           let decoded = try? JSONDecoder().decode([String: ShortcutConfig].self, from: data) {
+            shortcuts = decoded
+        } else {
+            resetShortcuts()
+        }
+
         rescheduleReminder()
     }
 
     // MARK: - Persistence
     private func save<T>(_ value: T, for key: String) {
         UserDefaults.standard.set(value, forKey: "diary_\(key)")
+    }
+
+    private func saveShortcuts() {
+        if let data = try? JSONEncoder().encode(shortcuts) {
+            UserDefaults.standard.set(data, forKey: "diary_shortcuts")
+        }
     }
 }

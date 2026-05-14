@@ -151,6 +151,15 @@ final class ViewModel {
         }
     }
 
+    // MARK: - Locking
+
+    private(set) var lockVersion = 0
+
+    func isEntryLocked(_ entry: Entry) -> Bool { _ = lockVersion; return store.isEntryLocked(entry) }
+    func isGroupLocked(_ group: DiaryGroup) -> Bool { _ = lockVersion; return store.isGroupLocked(group) }
+    func toggleEntryLock(_ entry: Entry) { store.toggleEntryLock(entry); lockVersion &+= 1 }
+    func toggleGroupLock(_ group: DiaryGroup) { store.toggleGroupLock(group); lockVersion &+= 1 }
+
     func selectEntry(_ entry: Entry) {
         flushSave()
         lastSavedContent = entry.content
@@ -158,17 +167,20 @@ final class ViewModel {
     }
 
     var showNewEntryDialog = false
+    var newEntryLocked = false
 
     func newEntry() {
         flushSave()
+        newEntryLocked = false
         showNewEntryDialog = true
     }
 
-    func createEntry(name: String) {
+    func createEntry(name: String, lock: Bool = false) {
         let title = name.trimmingCharacters(in: .whitespaces)
         guard !title.isEmpty else { return }
         store.useDatePrefix = settings.useDatePrefix
         let entry = store.createEntry(title: title)
+        if lock { store.toggleEntryLock(entry) }
         invalidateEntryDatesCache()
         selectEntry(entry)
     }

@@ -59,6 +59,44 @@ final class EntryStore {
         sortEntries()
     }
 
+    // MARK: - Locking
+
+    private var lockedEntryPaths: Set<String> = [] {
+        didSet {
+            UserDefaults.standard.set(Array(lockedEntryPaths), forKey: "diary_lockedEntryPaths")
+        }
+    }
+
+    private var lockedGroupIDs: Set<String> = [] {
+        didSet {
+            UserDefaults.standard.set(Array(lockedGroupIDs), forKey: "diary_lockedGroupIDs")
+        }
+    }
+
+    func isEntryLocked(_ entry: Entry) -> Bool {
+        lockedEntryPaths.contains(entry.fileURL.path)
+    }
+
+    func isGroupLocked(_ group: DiaryGroup) -> Bool {
+        lockedGroupIDs.contains(group.id)
+    }
+
+    func toggleEntryLock(_ entry: Entry) {
+        if lockedEntryPaths.contains(entry.fileURL.path) {
+            lockedEntryPaths.remove(entry.fileURL.path)
+        } else {
+            lockedEntryPaths.insert(entry.fileURL.path)
+        }
+    }
+
+    func toggleGroupLock(_ group: DiaryGroup) {
+        if lockedGroupIDs.contains(group.id) {
+            lockedGroupIDs.remove(group.id)
+        } else {
+            lockedGroupIDs.insert(group.id)
+        }
+    }
+
     private func sortEntries() {
         entries.sort { a, b in
             let aPin = isPinned(a)
@@ -82,6 +120,12 @@ final class EntryStore {
         if entries.isEmpty {
             createWelcomeEntry()
         }
+        loadLockState()
+    }
+
+    private func loadLockState() {
+        lockedEntryPaths = Set(UserDefaults.standard.stringArray(forKey: "diary_lockedEntryPaths") ?? [])
+        lockedGroupIDs = Set(UserDefaults.standard.stringArray(forKey: "diary_lockedGroupIDs") ?? [])
     }
 
     /// Switch to a new storage root
@@ -101,6 +145,7 @@ final class EntryStore {
         if entries.isEmpty {
             createWelcomeEntry()
         }
+        loadLockState()
     }
 
     // MARK: - Groups
@@ -338,6 +383,13 @@ final class EntryStore {
                 set.remove(entry.fileURL.path)
                 set.insert(url.path)
                 pinnedPaths = set
+            }
+            // Migrate lock to new path
+            var lockSet = lockedEntryPaths
+            if lockSet.contains(entry.fileURL.path) {
+                lockSet.remove(entry.fileURL.path)
+                lockSet.insert(url.path)
+                lockedEntryPaths = lockSet
             }
         }
 
