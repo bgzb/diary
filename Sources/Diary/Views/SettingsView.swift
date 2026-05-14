@@ -189,19 +189,15 @@ struct SettingsView: View {
                             settings.shortcuts[action.id] = settings.defaultShortcut(for: action.id)
                         }
                     )
-                    if action.id != ShortcutAction.all.last?.id {
-                        Divider()
-                    }
-                }
-                HStack {
-                    Spacer()
-                    Button(l(.shortcutResetAll)) {
-                        settings.resetShortcuts()
-                    }
-                    .font(.caption)
                 }
             } header: {
                 Label(l(.shortcutSection), systemImage: "command")
+            }
+
+            Section {
+                Button(l(.shortcutResetAll)) {
+                    settings.resetShortcuts()
+                }
             }
         }
         .formStyle(.grouped)
@@ -366,33 +362,27 @@ private struct ShortcutRebindRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Text(label)
-                .font(.system(size: 13))
+                .font(.system(size: 14))
 
             Spacer()
 
             if isRecording {
-                HStack(spacing: 6) {
+                HStack(spacing: 4) {
                     Circle()
                         .fill(.red)
                         .frame(width: 6, height: 6)
                     Text("Recording…")
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.system(size: 12, design: .monospaced))
                         .foregroundColor(.secondary)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(Capsule().fill(Color.red.opacity(0.1)))
             } else {
                 Button {
                     onTap()
                 } label: {
                     Text(config.displayString)
-                        .font(.system(size: 12, design: .monospaced))
+                        .font(.system(size: 13, design: .monospaced))
                         .fontWeight(.medium)
-                        .foregroundColor(.primary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(Capsule().fill(Color.primary.opacity(0.08)))
+                        .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
             }
@@ -401,13 +391,13 @@ private struct ShortcutRebindRow: View {
                 onReset()
             } label: {
                 Image(systemName: "arrow.counterclockwise")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
             }
             .buttonStyle(.plain)
             .opacity(isRecording ? 0 : 1)
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 6)
     }
 }
 
