@@ -164,12 +164,16 @@ struct ContentView: View {
                 if model.isEntryLocked(entry) && !lockManager.contentUnlocked {
                     lockedEntryOverlay
                 } else {
-                    Text(entry.title)
-                        .font(.system(size: 28, weight: .bold))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
-                        .padding(.bottom, 12)
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(entry.title)
+                            .font(.system(size: 28, weight: .bold))
+                        Spacer()
+                        ClockView(appLanguage: settings.appLanguage)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 12)
                     Rectangle()
                         .fill(Color.primary.opacity(0.12))
                         .frame(height: 1)
