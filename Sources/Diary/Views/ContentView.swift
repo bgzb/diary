@@ -759,7 +759,9 @@ struct ContentView: View {
                         .frame(height: 1)
                     MarkdownEditorView(
                         text: Binding(get: { model.editorText }, set: { model.editorText = $0 }),
-                        settings: settings
+                        settings: settings,
+                        groupDir: URL(fileURLWithPath: (settings.resolvedStoragePath as NSString).expandingTildeInPath)
+                            .appendingPathComponent(model.currentGroupID)
                     )
                     .id(editorID)
 
