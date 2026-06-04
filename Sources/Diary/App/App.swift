@@ -37,13 +37,13 @@ struct DiaryApp: App {
                         LockScreenView()
                             .environment(settings)
                             .environment(lockManager)
-                            .frame(minWidth: 700, minHeight: 500)
+                            .frame(minWidth: 800, minHeight: 600)
                     } else {
                         ContentView()
                             .environment(vm)
                             .environment(settings)
                             .environment(lockManager)
-                            .frame(minWidth: 700, minHeight: 500)
+                            .frame(minWidth: 800, minHeight: 600)
                     }
                 } else {
                     ProgressView()
@@ -57,7 +57,7 @@ struct DiaryApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unifiedCompact)
-        .defaultSize(width: 900, height: 700)
+        .defaultSize(width: 1100, height: 800)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button(L.string(.newEntry, lang: settings.appLanguage)) {
