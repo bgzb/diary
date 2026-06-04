@@ -8,7 +8,7 @@ struct EditorColors {
     let cursor: NSColor
     let selection: NSColor
 
-    static func from(_ theme: PreviewTheme) -> EditorColors {
+    static func from(_ theme: PreviewTheme, customColors: CustomThemeColors? = nil) -> EditorColors {
         switch theme {
         case .light:
             return EditorColors(
@@ -30,6 +30,16 @@ struct EditorColors {
                 text: NSColor(red: 0.812, green: 0.808, blue: 0.784, alpha: 1),
                 cursor: NSColor(red: 0.424, green: 0.706, blue: 0.933, alpha: 1),
                 selection: NSColor(red: 0.145, green: 0.208, blue: 0.271, alpha: 1)
+            )
+        case .custom:
+            guard let c = customColors else { return from(.light) }
+            let accent = c.accentColor.nsColor
+            let bg = c.editorBackground.nsColor
+            return EditorColors(
+                bg: bg,
+                text: c.editorText.nsColor,
+                cursor: accent,
+                selection: bg.blended(withFraction: 0.15, of: accent) ?? bg
             )
         case .system:
             let name = NSApp.effectiveAppearance.name

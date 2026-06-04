@@ -114,7 +114,7 @@ struct SidebarView: View {
                         .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(.secondary)
                     Circle()
-                        .fill(Color.accentColor.opacity(0.2))
+                        .fill(settings.effectiveAccentColor.opacity(0.2))
                         .frame(width: 6, height: 6)
                     Text(currentGroupName)
                         .font(.system(size: 12, weight: .medium))
@@ -217,7 +217,7 @@ struct SidebarView: View {
                 Spacer()
                 if isCurrent {
                     Circle()
-                        .fill(Color.accentColor.opacity(0.4))
+                        .fill(settings.effectiveAccentColor.opacity(0.4))
                         .frame(width: 5, height: 5)
                 }
             }
@@ -545,7 +545,7 @@ struct SidebarView: View {
             HStack(spacing: 8) {
                 Image(systemName: "calendar")
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(showCalendarStandalone ? Color.accentColor : .secondary)
+                    .foregroundStyle(showCalendarStandalone ? settings.effectiveAccentColor : .secondary)
                 Text(L.string(.calendar, lang: settings.appLanguage))
                     .font(.system(size: 13, weight: showCalendarStandalone ? .medium : .regular))
                     .foregroundStyle(showCalendarStandalone ? .primary : .secondary)
@@ -554,7 +554,7 @@ struct SidebarView: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 6)
             .contentShape(Rectangle())
-            .background(showCalendarStandalone ? Color.accentColor.opacity(0.08) : Color.clear)
+            .background(showCalendarStandalone ? settings.effectiveAccentColor.opacity(0.08) : Color.clear)
         }
         .buttonStyle(.plain)
         .padding(.bottom, 6)
@@ -585,6 +585,7 @@ struct SidebarView: View {
         case .light:  return Color(white: 0.91)
         case .grey:   return Color(red: 0.89, green: 0.88, blue: 0.86)
         case .dark:   return Color(white: 0.12)
+        case .custom: return settings.customThemeColors.sidebarBackground.color
         case .system:
             if NSApp.effectiveAppearance.name == .darkAqua { return Color(white: 0.12) }
             return Color(white: 0.91)
@@ -599,6 +600,8 @@ struct SidebarView: View {
             return Color(red: 0.76, green: 0.74, blue: 0.70)
         case .dark:
             return Color(white: 0.28)
+        case .custom:
+            return settings.customThemeColors.sidebarTint.color
         case .system:
             if NSApp.effectiveAppearance.name == .darkAqua {
                 return Color(white: 0.28)

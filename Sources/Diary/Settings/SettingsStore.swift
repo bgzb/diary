@@ -63,6 +63,82 @@ private extension Character {
     var firstCharacter: Character { self }
 }
 
+// MARK: - Custom Theme Colors
+
+struct CodableColor: Codable, Equatable {
+    var red: Double
+    var green: Double
+    var blue: Double
+    var alpha: Double
+
+    init(nsColor: NSColor) {
+        let srgb = nsColor.usingColorSpace(.sRGB) ?? NSColor(red: 0, green: 0, blue: 0, alpha: 1)
+        red = Double(srgb.redComponent)
+        green = Double(srgb.greenComponent)
+        blue = Double(srgb.blueComponent)
+        alpha = Double(srgb.alphaComponent)
+    }
+
+    init(color: Color) {
+        self.init(nsColor: NSColor(color))
+    }
+
+    var nsColor: NSColor {
+        NSColor(red: CGFloat(red), green: CGFloat(green), blue: CGFloat(blue), alpha: CGFloat(alpha))
+    }
+
+    var color: Color {
+        Color(red: red, green: green, blue: blue, opacity: alpha)
+    }
+
+    var hexString: String {
+        let r = UInt8(max(0, min(1, red)) * 255)
+        let g = UInt8(max(0, min(1, green)) * 255)
+        let b = UInt8(max(0, min(1, blue)) * 255)
+        return String(format: "#%02X%02X%02X", r, g, b)
+    }
+
+    init(hex: String) {
+        let stripped = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        let scanner = Scanner(string: stripped)
+        var hexValue: UInt64 = 0
+        if scanner.scanHexInt64(&hexValue), stripped.count == 6 {
+            red = Double((hexValue >> 16) & 0xFF) / 255.0
+            green = Double((hexValue >> 8) & 0xFF) / 255.0
+            blue = Double(hexValue & 0xFF) / 255.0
+            alpha = 1.0
+        } else {
+            self = CodableColor(nsColor: .black)
+        }
+    }
+}
+
+struct CustomThemeColors: Codable, Equatable {
+    var editorBackground: CodableColor
+    var editorText: CodableColor
+    var contentBackground: CodableColor
+    var sidebarBackground: CodableColor
+    var sidebarTint: CodableColor
+    var accentColor: CodableColor
+    var formBackground: CodableColor
+
+    static let defaultLight = CustomThemeColors(
+        editorBackground: CodableColor(nsColor: NSColor(red: 0.984, green: 0.980, blue: 0.969, alpha: 1)),
+        editorText: CodableColor(nsColor: NSColor(red: 0.114, green: 0.110, blue: 0.102, alpha: 1)),
+        contentBackground: CodableColor(nsColor: NSColor(white: 0.98, alpha: 1)),
+        sidebarBackground: CodableColor(nsColor: NSColor(white: 0.91, alpha: 1)),
+        sidebarTint: CodableColor(nsColor: NSColor(red: 0.80, green: 0.83, blue: 0.87, alpha: 1)),
+        accentColor: CodableColor(nsColor: NSColor(red: 0.0, green: 0.478, blue: 1.0, alpha: 1)),
+        formBackground: CodableColor(nsColor: NSColor(white: 0.98, alpha: 1))
+    )
+}
+
+struct CustomThemePreset: Identifiable, Codable, Equatable {
+    var id = UUID()
+    var name: String
+    var colors: CustomThemeColors
+}
+
 // MARK: - Preview Theme
 
 enum PreviewTheme: String, CaseIterable {
@@ -70,6 +146,7 @@ enum PreviewTheme: String, CaseIterable {
     case light = "Light"
     case grey = "Grey"
     case dark = "Dark"
+    case custom = "Custom"
 
     func displayName(_ lang: AppLanguage) -> String {
         switch self {
@@ -77,6 +154,7 @@ enum PreviewTheme: String, CaseIterable {
         case .light: return L.string(.lightTheme, lang: lang)
         case .grey: return L.string(.softTheme, lang: lang)
         case .dark: return L.string(.darkTheme, lang: lang)
+        case .custom: return L.string(.customTheme, lang: lang)
         }
     }
 }
@@ -145,6 +223,21 @@ final class SettingsStore {
     // MARK: - Preview
     var previewTheme: PreviewTheme = .system {
         didSet { save(previewTheme.rawValue, for: "previewTheme") }
+    }
+
+    // MARK: - Custom Theme
+    var customThemeColors: CustomThemeColors = .defaultLight {
+        didSet { saveCustomThemeColors() }
+    }
+
+    var presets: [CustomThemePreset] = [] {
+        didSet { savePresets() }
+    }
+
+    var effectiveAccentColor: Color {
+        previewTheme == .custom
+            ? customThemeColors.accentColor.color
+            : Color.accentColor
     }
 
     // MARK: - General
@@ -248,6 +341,18 @@ final class SettingsStore {
             resetShortcuts()
         }
 
+        // Load custom theme colors
+        if let data = d.data(forKey: "diary_customThemeColors"),
+           let decoded = try? JSONDecoder().decode(CustomThemeColors.self, from: data) {
+            customThemeColors = decoded
+        }
+
+        // Load presets
+        if let data = d.data(forKey: "diary_customThemePresets"),
+           let decoded = try? JSONDecoder().decode([CustomThemePreset].self, from: data) {
+            presets = decoded
+        }
+
         rescheduleReminder()
     }
 
@@ -260,5 +365,56 @@ final class SettingsStore {
         if let data = try? JSONEncoder().encode(shortcuts) {
             UserDefaults.standard.set(data, forKey: "diary_shortcuts")
         }
+    }
+
+    private func saveCustomThemeColors() {
+        if let data = try? JSONEncoder().encode(customThemeColors) {
+            UserDefaults.standard.set(data, forKey: "diary_customThemeColors")
+        }
+    }
+
+    private func savePresets() {
+        if let data = try? JSONEncoder().encode(presets) {
+            UserDefaults.standard.set(data, forKey: "diary_customThemePresets")
+        }
+    }
+
+    func savePreset(name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        presets.removeAll { $0.name == trimmed }
+        presets.append(CustomThemePreset(name: trimmed, colors: customThemeColors))
+    }
+
+    func applyPreset(_ preset: CustomThemePreset) {
+        customThemeColors = preset.colors
+    }
+
+    func deletePreset(id: UUID) {
+        presets.removeAll { $0.id == id }
+    }
+
+    func customColorBinding(for keyPath: WritableKeyPath<CustomThemeColors, CodableColor>) -> Binding<Color> {
+        Binding(
+            get: { self.customThemeColors[keyPath: keyPath].color },
+            set: {
+                var updated = self.customThemeColors
+                updated[keyPath: keyPath] = CodableColor(color: $0)
+                self.customThemeColors = updated
+            }
+        )
+    }
+
+    func customColorHexBinding(for keyPath: WritableKeyPath<CustomThemeColors, CodableColor>) -> Binding<String> {
+        Binding(
+            get: { self.customThemeColors[keyPath: keyPath].hexString },
+            set: { newHex in
+                let trimmed = newHex.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard trimmed.count == 7, trimmed.hasPrefix("#") else { return }
+                var updated = self.customThemeColors
+                updated[keyPath: keyPath] = CodableColor(hex: trimmed)
+                self.customThemeColors = updated
+            }
+        )
     }
 }

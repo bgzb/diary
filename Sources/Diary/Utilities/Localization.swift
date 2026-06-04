@@ -88,6 +88,21 @@ enum LKey {
     case lightTheme
     case darkTheme
     case softTheme
+    case customTheme
+    case customColorsSection
+    case customEditorBg
+    case customEditorText
+    case customContentBg
+    case customSidebarBg
+    case customSidebarTint
+    case customAccentColor
+    case customFormBg
+    case resetCustomColors
+    case presetsSection
+    case presetNamePlaceholder
+    case savePreset
+    case applyPreset
+    case deletePreset
 
     // General section
     case language
@@ -243,6 +258,21 @@ enum LKey {
         case .lightTheme: return "Light"
         case .darkTheme: return "Dark"
         case .softTheme: return "Soft"
+        case .customTheme: return "Custom"
+        case .customColorsSection: return "Custom Colors"
+        case .customEditorBg: return "Editor Background"
+        case .customEditorText: return "Editor Text"
+        case .customContentBg: return "Content Background"
+        case .customSidebarBg: return "Sidebar Background"
+        case .customSidebarTint: return "Sidebar Tint"
+        case .customAccentColor: return "Accent Color"
+        case .customFormBg: return "Form Background"
+        case .resetCustomColors: return "Reset to Defaults"
+        case .presetsSection: return "Presets"
+        case .presetNamePlaceholder: return "Preset name..."
+        case .savePreset: return "Save"
+        case .applyPreset: return "Apply"
+        case .deletePreset: return "Delete"
         case .language: return "Language"
         case .languageSystem: return "System"
         case .languageEnglish: return "English"
@@ -384,6 +414,21 @@ enum LKey {
         case .lightTheme: return "浅色"
         case .darkTheme: return "深色"
         case .softTheme: return "柔和"
+        case .customTheme: return "自定义"
+        case .customColorsSection: return "自定义颜色"
+        case .customEditorBg: return "编辑器背景"
+        case .customEditorText: return "编辑器文字"
+        case .customContentBg: return "内容区背景"
+        case .customSidebarBg: return "侧边栏背景"
+        case .customSidebarTint: return "侧边栏选中色"
+        case .customAccentColor: return "强调色"
+        case .customFormBg: return "设置页背景"
+        case .resetCustomColors: return "恢复默认值"
+        case .presetsSection: return "预设"
+        case .presetNamePlaceholder: return "预设名称..."
+        case .savePreset: return "保存"
+        case .applyPreset: return "应用"
+        case .deletePreset: return "删除"
         case .language: return "语言"
         case .languageSystem: return "跟随系统"
         case .languageEnglish: return "English"

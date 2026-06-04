@@ -8,24 +8,33 @@ struct SettingsView: View {
     @State private var passwordSheetMode: PasswordMode?
     @State private var recordingAction: String?
     @State private var keyMonitor: Any?
+    @State private var presetName = ""
+    @State private var presetToDelete: CustomThemePreset?
+    @State private var selectedTheme: PreviewTheme = .system
     private var l: (LKey) -> String { { L.string($0, lang: settings.appLanguage) } }
 
     private var isGrey: Bool { settings.previewTheme == .grey }
+    private var isCustom: Bool { settings.previewTheme == .custom }
+    private var customFormBg: Color { settings.customThemeColors.formBackground.color }
 
     var body: some View {
         TabView {
             generalTab
                 .tabItem { Label(l(.tabGeneral), systemImage: "gearshape") }
                 .formBackgroundGrey(isGrey)
+                .formBackgroundCustom(isCustom, color: customFormBg)
             editorTab
                 .tabItem { Label(l(.tabEditor), systemImage: "text.alignleft") }
                 .formBackgroundGrey(isGrey)
+                .formBackgroundCustom(isCustom, color: customFormBg)
             shortcutsTab
                 .tabItem { Label(l(.tabShortcuts), systemImage: "command") }
                 .formBackgroundGrey(isGrey)
+                .formBackgroundCustom(isCustom, color: customFormBg)
         }
         .id(settings.appLanguage)
         .background(GreyWindowTinter(isGrey: isGrey))
+        .onAppear { selectedTheme = settings.previewTheme }
         .onChange(of: recordingAction) { _, newValue in
             if newValue != nil {
                 installKeyMonitor()
@@ -40,10 +49,16 @@ struct SettingsView: View {
     private var generalTab: some View {
         Form {
             Section {
-                Picker(l(.theme), selection: $settings.previewTheme) {
+                Picker(l(.theme), selection: $selectedTheme) {
                     ForEach(PreviewTheme.allCases, id: \.self) { theme in
                         Text(theme.displayName(settings.appLanguage)).tag(theme)
                     }
+                }
+                .onChange(of: selectedTheme) { _, newValue in
+                    settings.previewTheme = newValue
+                }
+                .onChange(of: settings.previewTheme) { _, newValue in
+                    selectedTheme = newValue
                 }
                 Picker(l(.language), selection: $settings.appLanguage) {
                     ForEach(AppLanguage.allCases, id: \.self) { lang in
@@ -52,6 +67,99 @@ struct SettingsView: View {
                 }
             } header: {
                 Label(l(.appearanceSection), systemImage: "paintpalette")
+            }
+
+            if settings.previewTheme == .custom {
+                Section {
+                    InlineColorRow(
+                        label: l(.customEditorBg),
+                        hex: settings.customColorHexBinding(for: \.editorBackground),
+                        color: settings.customColorBinding(for: \.editorBackground)
+                    )
+                    InlineColorRow(
+                        label: l(.customEditorText),
+                        hex: settings.customColorHexBinding(for: \.editorText),
+                        color: settings.customColorBinding(for: \.editorText)
+                    )
+                    InlineColorRow(
+                        label: l(.customContentBg),
+                        hex: settings.customColorHexBinding(for: \.contentBackground),
+                        color: settings.customColorBinding(for: \.contentBackground)
+                    )
+                    InlineColorRow(
+                        label: l(.customSidebarBg),
+                        hex: settings.customColorHexBinding(for: \.sidebarBackground),
+                        color: settings.customColorBinding(for: \.sidebarBackground)
+                    )
+                    InlineColorRow(
+                        label: l(.customSidebarTint),
+                        hex: settings.customColorHexBinding(for: \.sidebarTint),
+                        color: settings.customColorBinding(for: \.sidebarTint)
+                    )
+                    InlineColorRow(
+                        label: l(.customAccentColor),
+                        hex: settings.customColorHexBinding(for: \.accentColor),
+                        color: settings.customColorBinding(for: \.accentColor)
+                    )
+                    InlineColorRow(
+                        label: l(.customFormBg),
+                        hex: settings.customColorHexBinding(for: \.formBackground),
+                        color: settings.customColorBinding(for: \.formBackground)
+                    )
+                    Button(l(.resetCustomColors)) {
+                        settings.customThemeColors = .defaultLight
+                    }
+                } header: {
+                    Label(l(.customColorsSection), systemImage: "paintbrush")
+                }
+
+                Section {
+                    HStack {
+                        TextField(l(.presetNamePlaceholder), text: $presetName)
+                            .textFieldStyle(.roundedBorder)
+                        Button(l(.savePreset)) {
+                            settings.savePreset(name: presetName)
+                            presetName = ""
+                        }
+                        .disabled(presetName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                    if settings.presets.isEmpty {
+                        Text("No saved presets")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                    } else {
+                        ForEach(settings.presets) { preset in
+                            HStack {
+                                Text(preset.name)
+                                    .font(.system(.body))
+                                Spacer()
+                                Button(l(.applyPreset)) {
+                                    settings.applyPreset(preset)
+                                }
+                                Button(role: .destructive) {
+                                    presetToDelete = preset
+                                } label: {
+                                    Image(systemName: "trash")
+                                }
+                                .buttonStyle(.borderless)
+                            }
+                        }
+                    }
+                } header: {
+                    Label(l(.presetsSection), systemImage: "bookmark")
+                }
+                .alert("Delete \"\(presetToDelete?.name ?? "")\"?", isPresented: Binding(
+                    get: { presetToDelete != nil },
+                    set: { if !$0 { presetToDelete = nil } }
+                )) {
+                    Button(l(.deletePreset), role: .destructive) {
+                        if let p = presetToDelete { settings.deletePreset(id: p.id) }
+                        presetToDelete = nil
+                    }
+                    Button(l(.cancel), role: .cancel) { presetToDelete = nil }
+                } message: {
+                    Text("This action cannot be undone.")
+                }
             }
 
             Section {
@@ -339,6 +447,8 @@ struct SettingsView: View {
         settings.editorSpellCheck = false
         settings.editorTabWidth = 4
         settings.previewTheme = .system
+        settings.customThemeColors = .defaultLight
+        settings.presets = []
         settings.openLastEntry = true
         settings.autoSaveInterval = 1.0
         settings.appLanguage = .system
@@ -458,39 +568,26 @@ private extension NSWindow {
         if grey {
             titlebarAppearsTransparent = true
             backgroundColor = NSColor(red: 0.935, green: 0.925, blue: 0.900, alpha: 1.0)
-            if let content = contentView {
-                styleMask.insert(.fullSizeContentView)
-                tintEffectViews(content, grey: true)
-            }
         } else {
             titlebarAppearsTransparent = false
             backgroundColor = NSColor.windowBackgroundColor
-            if let content = contentView {
-                styleMask.remove(.fullSizeContentView)
-                tintEffectViews(content, grey: false)
-            }
         }
     }
-}
-
-private func tintEffectViews(_ view: NSView, grey: Bool) {
-    if let effect = view as? NSVisualEffectView {
-        effect.material = grey ? .windowBackground : .sidebar
-    }
-    for sub in view.subviews { tintEffectViews(sub, grey: grey) }
 }
 
 // MARK: - Grey Theme Form Background
 
 private extension View {
     func formBackgroundGrey(_ isGrey: Bool) -> some View {
-        self
-            .scrollContentBackground(isGrey ? .hidden : .visible)
-            .background(
-                isGrey
-                    ? Color(red: 0.935, green: 0.925, blue: 0.900)
-                    : .clear
-            )
+        self.background(
+            isGrey
+                ? Color(red: 0.935, green: 0.925, blue: 0.900)
+                : .clear
+        )
+    }
+
+    func formBackgroundCustom(_ isCustom: Bool, color: Color) -> some View {
+        self.background(isCustom ? color : .clear)
     }
 }
 
@@ -523,6 +620,71 @@ private struct IntField: View {
         } else {
             let clamped = Int(value)
             text = "\(clamped)"
+        }
+    }
+}
+
+// MARK: - Inline Color Row
+
+private extension Color {
+    var hexString: String {
+        let nsColor = NSColor(self).usingColorSpace(.sRGB) ?? NSColor.black
+        let r = UInt8(max(0, min(1, nsColor.redComponent)) * 255)
+        let g = UInt8(max(0, min(1, nsColor.greenComponent)) * 255)
+        let b = UInt8(max(0, min(1, nsColor.blueComponent)) * 255)
+        return String(format: "#%02X%02X%02X", r, g, b)
+    }
+}
+
+private struct InlineColorRow: View {
+    let label: String
+    @Binding var hex: String
+    @Binding var color: Color
+    @State private var showPopover = false
+    @State private var editColor: Color = .black
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .frame(width: 130, alignment: .leading)
+            Button {
+                editColor = color
+                showPopover = true
+            } label: {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(color)
+                    .frame(width: 24, height: 24)
+                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.primary.opacity(0.2), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .popover(isPresented: $showPopover) {
+                VStack(alignment: .trailing, spacing: 12) {
+                    ColorPicker("", selection: $editColor)
+                        .frame(width: 200, height: 200)
+                    HStack {
+                        ColorPicker("", selection: $editColor)
+                            .labelsHidden()
+                        Text(editColor.hexString)
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Apply") {
+                            color = editColor
+                            hex = editColor.hexString
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                    }
+                }
+                .padding()
+            }
+            TextField("#RRGGBB", text: $hex)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(.body, design: .monospaced))
+                .frame(width: 90)
+                .onChange(of: color) { _, _ in
+                    hex = color.hexString
+                }
         }
     }
 }

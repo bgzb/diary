@@ -89,7 +89,7 @@ struct MarkdownEditorView: NSViewRepresentable {
         style.tabStops = []
         textView.defaultParagraphStyle = style
 
-        let colors = EditorColors.from(settings.previewTheme)
+        let colors = EditorColors.from(settings.previewTheme, customColors: settings.customThemeColors)
         textView.backgroundColor = colors.bg
         textView.textColor = colors.text
         textView.insertionPointColor = colors.cursor
@@ -112,7 +112,7 @@ struct MarkdownEditorView: NSViewRepresentable {
         style.tabStops = []
         textView.defaultParagraphStyle = style
 
-        let colors = EditorColors.from(settings.previewTheme)
+        let colors = EditorColors.from(settings.previewTheme, customColors: settings.customThemeColors)
         textView.backgroundColor = colors.bg
         textView.textColor = colors.text
         textView.insertionPointColor = colors.cursor

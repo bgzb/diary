@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct CalendarView: View {
+    @Environment(SettingsStore.self) private var settings
     @Binding var displayedMonth: Date
     let entryDates: Set<Date>
     @Binding var selectedDate: Date?
@@ -121,15 +122,15 @@ struct CalendarView: View {
                     .font(.system(size: 12, weight: isToday ? .bold : .regular))
                     .frame(width: 24, height: 24)
                     .background(
-                        isToday ? Circle().fill(Color.accentColor) :
-                        isSel   ? Circle().fill(Color.accentColor.opacity(0.25)) :
+                        isToday ? Circle().fill(settings.effectiveAccentColor) :
+                        isSel   ? Circle().fill(settings.effectiveAccentColor.opacity(0.25)) :
                         nil
                     )
                     .foregroundStyle(isToday ? Color.white : Color.primary)
                     .opacity(inMonth ? 1.0 : 0.35)
                 if hasEntry {
                     Circle()
-                        .fill(isToday ? .white : Color.accentColor)
+                        .fill(isToday ? .white : settings.effectiveAccentColor)
                         .frame(width: 4, height: 4)
                 } else {
                     Spacer().frame(height: 4)

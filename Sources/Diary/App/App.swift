@@ -25,6 +25,7 @@ struct DiaryApp: App {
         case .system: return nil
         case .light, .grey: return .light
         case .dark: return .dark
+        case .custom: return .light
         }
     }
 
@@ -52,6 +53,7 @@ struct DiaryApp: App {
                 }
             }
             .preferredColorScheme(colorScheme)
+            .tint(settings.effectiveAccentColor)
         }
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unifiedCompact)

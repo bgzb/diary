@@ -199,7 +199,7 @@ struct CalendarPanelView: View {
                     .buttonStyle(.plain)
                     .listRowBackground(
                         entry.id == model.currentEntry?.id
-                            ? Color.accentColor.opacity(0.1)
+                            ? settings.effectiveAccentColor.opacity(0.1)
                             : Color.clear
                     )
                 }
@@ -229,6 +229,7 @@ struct CalendarPanelView: View {
         case .light:  return Color(white: 0.98)
         case .grey:   return Color(red: 0.935, green: 0.925, blue: 0.900)
         case .dark:   return Color(red: 0.157, green: 0.153, blue: 0.145)
+        case .custom: return settings.customThemeColors.contentBackground.color
         case .system:
             if NSApp.effectiveAppearance.name == .darkAqua { return Color(red: 0.157, green: 0.153, blue: 0.145) }
             return Color(white: 0.98)
