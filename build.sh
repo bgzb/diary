@@ -25,4 +25,7 @@ find Sources/Diary -name "*.swift" -print0 | xargs -0 \
 # Copy Info.plist
 cp Info.plist Diary.app/Contents/
 
+# Copy icon
+cp AppIcon.icns Diary.app/Contents/Resources/
+
 echo "Build: Diary.app"
