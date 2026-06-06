@@ -11,39 +11,19 @@ BG_NAME="bg.png"
 # ── Build app ──
 ./build.sh
 
-# ── Detect system appearance ──
-if defaults read -g AppleInterfaceStyle 2>/dev/null | grep -q Dark; then
-    COLOR_MODE="dark"
-    echo "Theme: dark → charcoal gradient + label plates for readability"
-else
-    COLOR_MODE="light"
-    echo "Theme: light → warm paper gradient background (Finder black labels)"
-fi
-
-# ── Generate gradient background ──
+# ── Generate warm paper gradient background (always light — Finder icon labels are black) ──
 echo "Generating background..."
-swift - <<'SWIFT' /tmp/${BG_NAME} $COLOR_MODE
+swift - <<'SWIFT' /tmp/${BG_NAME}
 import CoreGraphics
 import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
 let width = 600, height = 400
-let isDark = CommandLine.arguments.count > 2 && CommandLine.arguments[2] == "dark"
-
 let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
 
-// ── Draw gradient ──
-let topColor: CGColor
-let bottomColor: CGColor
-
-if isDark {
-    topColor    = CGColor(red: 0.227, green: 0.227, blue: 0.227, alpha: 1.0)  // #3A3A3A
-    bottomColor = CGColor(red: 0.145, green: 0.145, blue: 0.145, alpha: 1.0)  // #252525
-} else {
-    topColor    = CGColor(red: 0.996, green: 0.988, blue: 0.973, alpha: 1.0) // #FEFCF8
-    bottomColor = CGColor(red: 0.961, green: 0.929, blue: 0.878, alpha: 1.0) // #F5EDE0
-}
+let topColor    = CGColor(red: 0.996, green: 0.988, blue: 0.973, alpha: 1.0) // #FEFCF8
+let bottomColor = CGColor(red: 0.961, green: 0.929, blue: 0.878, alpha: 1.0) // #F5EDE0
 
 let gradient = CGGradient(
     colorsSpace: colorSpace,
@@ -66,22 +46,6 @@ ctx.drawLinearGradient(gradient,
     end: CGPoint(x: 0, y: CGFloat(height)),
     options: []
 )
-
-// ── Dark mode: draw a continuous light label shelf so black text is readable ──
-// Finder icon layout: Diary.app {180,180}, Applications {420,180}, icon sz=80
-// Icon bottom at Finder y=260. Labels at ~Finder y=262..284.
-// Single wide shelf is more robust than per-icon plates — tolerates Finder label drift.
-if isDark {
-    let plateColor = CGColor(red: 0.90, green: 0.88, blue: 0.85, alpha: 0.88)
-    ctx.setFillColor(plateColor)
-
-    // Shelf: tall enough to cover label area regardless of Finder layout drift
-    // CG y=100..145 → Finder y=255..300 (icon bottom at 260, label ~264-290)
-    let shelf = CGRect(x: 125, y: 100, width: 350, height: 45)
-    let path = CGPath(roundedRect: shelf, cornerWidth: 10, cornerHeight: 10, transform: nil)
-    ctx.addPath(path)
-    ctx.fillPath()
-}
 
 let image = ctx.makeImage()!
 let url = URL(fileURLWithPath: CommandLine.arguments[1])
@@ -119,8 +83,6 @@ DEVICE=$(hdiutil attach -readwrite -nobrowse "$DMG_TMP" 2>&1 | tee /dev/stderr |
 echo "Mounted at /Volumes/${VOL_NAME} (device: $DEVICE)"
 
 # ── Configure Finder window via AppleScript ──
-# Key: a single open–configure–update–close cycle lets Finder detect
-# background brightness and pick the right label color (white on dark, black on light).
 echo "Configuring Finder window..."
 osascript <<'APPLESCRIPT'
 tell application "Finder"
