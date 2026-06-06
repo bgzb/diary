@@ -67,23 +67,19 @@ ctx.drawLinearGradient(gradient,
     options: []
 )
 
-// ── Dark mode: draw light label plates so black text is readable ──
-// Finder: Diary.app {180,180} sz=80, Applications {420,180} sz=80
-// Icon bottom at Finder y=260. Label at Finder y≈270..294.
-// CG y = 400 − Finder y → CG label: y=106..130
+// ── Dark mode: draw a continuous light label shelf so black text is readable ──
+// Finder icon layout: Diary.app {180,180}, Applications {420,180}, icon sz=80
+// Icon bottom at Finder y=260. Labels at ~Finder y=262..284.
+// Single wide shelf is more robust than per-icon plates — tolerates Finder label drift.
 if isDark {
     let plateColor = CGColor(red: 0.90, green: 0.88, blue: 0.85, alpha: 0.88)
     ctx.setFillColor(plateColor)
 
-    let diaryRect = CGRect(x: 165, y: 106, width: 110, height: 24)
-    let appsRect  = CGRect(x: 390, y: 106, width: 140, height: 24)
-
-    let p1 = CGPath(roundedRect: diaryRect, cornerWidth: 8, cornerHeight: 8, transform: nil)
-    ctx.addPath(p1)
-    ctx.fillPath()
-
-    let p2 = CGPath(roundedRect: appsRect, cornerWidth: 8, cornerHeight: 8, transform: nil)
-    ctx.addPath(p2)
+    // Shelf: tall enough to cover label area regardless of Finder layout drift
+    // CG y=100..145 → Finder y=255..300 (icon bottom at 260, label ~264-290)
+    let shelf = CGRect(x: 125, y: 100, width: 350, height: 45)
+    let path = CGPath(roundedRect: shelf, cornerWidth: 10, cornerHeight: 10, transform: nil)
+    ctx.addPath(path)
     ctx.fillPath()
 }
 
