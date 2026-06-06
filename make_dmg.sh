@@ -11,8 +11,8 @@ BG_NAME="bg.png"
 # ── Build app ──
 ./build.sh
 
-# ── Generate warm paper gradient background (always light — Finder icon labels are black) ──
-echo "Generating background..."
+# ── Generate warm paper gradient background ──
+echo "Generating background image..."
 swift - <<'SWIFT' /tmp/${BG_NAME}
 import CoreGraphics
 import Foundation
@@ -20,8 +20,8 @@ import ImageIO
 import UniformTypeIdentifiers
 
 let width = 600, height = 400
-let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
 
+let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
 let topColor    = CGColor(red: 0.996, green: 0.988, blue: 0.973, alpha: 1.0) // #FEFCF8
 let bottomColor = CGColor(red: 0.961, green: 0.929, blue: 0.878, alpha: 1.0) // #F5EDE0
 
@@ -96,14 +96,18 @@ tell application "Finder"
         set arrangement of theViewOptions to not arranged
         set icon size of theViewOptions to 80
         set background picture of theViewOptions to file ".background:bg.png"
-        set position of item "Diary.app" of container window to {180, 180}
-        set position of item "Applications" of container window to {420, 180}
+        set position of item "Diary.app" of container window to {160, 140}
+        set position of item "Applications" of container window to {380, 140}
+        close
+        open
         update without registering applications
-        delay 1
+        delay 2
+        close
     end tell
 end tell
 APPLESCRIPT
 
+# Give Finder a moment to write .DS_Store
 sleep 1
 
 # ── Unmount ──
