@@ -2,48 +2,139 @@
 set -e
 cd "$(dirname "$0")"
 
-# ── Build app first ──
+APP_NAME="Diary"
+VOL_NAME="Diary"
+DMG_NAME="Diary.dmg"
+DMG_TMP="Diary_rw.dmg"
+BG_NAME="bg.png"
+
+# ── Build app ──
 ./build.sh
 
+# ── Generate warm paper gradient background ──
+echo "Generating background image..."
+swift - <<'SWIFT' /tmp/${BG_NAME}
+import CoreGraphics
+import Foundation
+import ImageIO
+import UniformTypeIdentifiers
+
+let width = 600, height = 400
+
+let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
+let topColor    = CGColor(red: 0.996, green: 0.988, blue: 0.973, alpha: 1.0) // #FEFCF8
+let bottomColor = CGColor(red: 0.961, green: 0.929, blue: 0.878, alpha: 1.0) // #F5EDE0
+
+let gradient = CGGradient(
+    colorsSpace: colorSpace,
+    colors: [topColor, bottomColor] as CFArray,
+    locations: [0.0, 1.0]
+)!
+
+let ctx = CGContext(
+    data: nil,
+    width: width,
+    height: height,
+    bitsPerComponent: 8,
+    bytesPerRow: width * 4,
+    space: colorSpace,
+    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+)!
+
+ctx.drawLinearGradient(gradient,
+    start: CGPoint(x: 0, y: 0),
+    end: CGPoint(x: 0, y: CGFloat(height)),
+    options: []
+)
+
+let image = ctx.makeImage()!
+let url = URL(fileURLWithPath: CommandLine.arguments[1])
+let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)!
+CGImageDestinationAddImage(dest, image, nil)
+CGImageDestinationFinalize(dest)
+SWIFT
+
 # ── Clean old DMG ──
-rm -f Diary.dmg
+rm -f "$DMG_NAME" "$DMG_TMP"
 
-# ── Create a clean staging directory with proper layout ──
+# ── Create staging directory ──
 STAGING="$(mktemp -d)"
-DMG_DIR="$STAGING/dmg"
-mkdir -p "$DMG_DIR"
 
-# Copy .app into staging
-cp -R Diary.app "$DMG_DIR/"
+# Copy app + symlink
+cp -R "$APP_NAME.app" "$STAGING/"
+ln -s /Applications "$STAGING/Applications"
 
-# Create Applications symlink (drag-to-install pattern)
-ln -s /Applications "$DMG_DIR/Applications"
+# Copy background into hidden .background folder
+mkdir -p "$STAGING/.background"
+cp "/tmp/${BG_NAME}" "$STAGING/.background/${BG_NAME}"
 
-# ── Create DMG (compressed, read-only) ──
-echo "Creating Diary.dmg..."
+# ── Create read-write DMG from staging ──
+echo "Creating DMG..."
 hdiutil create \
-    -volname "Diary" \
-    -srcfolder "$DMG_DIR" \
+    -volname "$VOL_NAME" \
+    -srcfolder "$STAGING" \
     -ov \
+    -format UDRW \
+    -fs HFS+ \
+    "$DMG_TMP" > /dev/null
+
+# ── Mount read-write ──
+DEVICE=$(hdiutil attach -readwrite -nobrowse "$DMG_TMP" 2>&1 | tee /dev/stderr | head -1 | awk '{print $1}')
+echo "Mounted at /Volumes/${VOL_NAME} (device: $DEVICE)"
+
+# ── Configure Finder window via AppleScript ──
+echo "Configuring Finder window..."
+osascript <<'APPLESCRIPT'
+tell application "Finder"
+    tell disk "Diary"
+        open
+        set current view of container window to icon view
+        set toolbar visible of container window to false
+        set statusbar visible of container window to false
+        set bounds of container window to {400, 200, 1000, 600}
+        set theViewOptions to the icon view options of container window
+        set arrangement of theViewOptions to not arranged
+        set icon size of theViewOptions to 80
+        set background picture of theViewOptions to file ".background:bg.png"
+        set position of item "Diary.app" of container window to {160, 140}
+        set position of item "Applications" of container window to {380, 140}
+        close
+        open
+        update without registering applications
+        delay 2
+        close
+    end tell
+end tell
+APPLESCRIPT
+
+# Give Finder a moment to write .DS_Store
+sleep 1
+
+# ── Unmount ──
+echo "Unmounting..."
+hdiutil detach "$DEVICE" -force 2>/dev/null || true
+hdiutil detach "/Volumes/${VOL_NAME}" -force 2>/dev/null || true
+
+# ── Convert to compressed read-only DMG ──
+echo "Compressing DMG..."
+hdiutil convert "$DMG_TMP" \
     -format UDZO \
     -imagekey zlib-level=9 \
-    -fs HFS+ \
-    "Diary.dmg"
+    -o "$DMG_NAME" > /dev/null
 
-# ── Sign the DMG (ad-hoc) ──
+# ── Sign the DMG ──
 echo "Signing DMG..."
-codesign --force --sign - "Diary.dmg" 2>/dev/null || true
+codesign --force --sign - "$DMG_NAME" 2>/dev/null || true
 
 # ── Cleanup ──
+rm -f "$DMG_TMP"
 rm -rf "$STAGING"
+rm -f "/tmp/${BG_NAME}"
 
 echo ""
-echo "✅ Diary.dmg ready ($(du -h Diary.dmg | cut -f1))"
+echo "✅ ${DMG_NAME} ready ($(du -h ${DMG_NAME} | cut -f1))"
 echo ""
 echo "📦 分发说明："
 echo "   用户从 GitHub 下载后，首次打开需要："
 echo "   右键点击 Diary.app → 打开 → 仍要打开"
 echo "   （因为未使用 Apple Developer ID 签名，macOS Gatekeeper 会拦截）"
-echo ""
-echo "   或者用户可以在终端运行："
-echo "   xattr -cr /Applications/Diary.app"
