@@ -13,16 +13,16 @@ BG_NAME="bg.png"
 
 # ── Detect system appearance ──
 if defaults read -g AppleInterfaceStyle 2>/dev/null | grep -q Dark; then
-    APPEARANCE="dark"
-    echo "System: dark mode → dark gradient background"
+    COLOR_MODE="dark"
+    echo "Theme: dark → charcoal gradient + label plates for readability"
 else
-    APPEARANCE="light"
-    echo "System: light mode → warm paper gradient background"
+    COLOR_MODE="light"
+    echo "Theme: light → warm paper gradient background (Finder black labels)"
 fi
 
 # ── Generate gradient background ──
-echo "Generating background image..."
-swift - <<'SWIFT' /tmp/${BG_NAME} $APPEARANCE
+echo "Generating background..."
+swift - <<'SWIFT' /tmp/${BG_NAME} $COLOR_MODE
 import CoreGraphics
 import Foundation
 import ImageIO
@@ -33,12 +33,13 @@ let isDark = CommandLine.arguments.count > 2 && CommandLine.arguments[2] == "dar
 
 let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
 
+// ── Draw gradient ──
 let topColor: CGColor
 let bottomColor: CGColor
 
 if isDark {
-    topColor    = CGColor(red: 0.18, green: 0.18, blue: 0.18, alpha: 1.0)  // #2E2E2E
-    bottomColor = CGColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)  // #1F1F1F
+    topColor    = CGColor(red: 0.227, green: 0.227, blue: 0.227, alpha: 1.0)  // #3A3A3A
+    bottomColor = CGColor(red: 0.145, green: 0.145, blue: 0.145, alpha: 1.0)  // #252525
 } else {
     topColor    = CGColor(red: 0.996, green: 0.988, blue: 0.973, alpha: 1.0) // #FEFCF8
     bottomColor = CGColor(red: 0.961, green: 0.929, blue: 0.878, alpha: 1.0) // #F5EDE0
@@ -65,6 +66,26 @@ ctx.drawLinearGradient(gradient,
     end: CGPoint(x: 0, y: CGFloat(height)),
     options: []
 )
+
+// ── Dark mode: draw light label plates so black text is readable ──
+// Finder: Diary.app {180,180} sz=80, Applications {420,180} sz=80
+// Icon bottom at Finder y=260. Label at Finder y≈270..294.
+// CG y = 400 − Finder y → CG label: y=106..130
+if isDark {
+    let plateColor = CGColor(red: 0.90, green: 0.88, blue: 0.85, alpha: 0.88)
+    ctx.setFillColor(plateColor)
+
+    let diaryRect = CGRect(x: 165, y: 106, width: 110, height: 24)
+    let appsRect  = CGRect(x: 390, y: 106, width: 140, height: 24)
+
+    let p1 = CGPath(roundedRect: diaryRect, cornerWidth: 8, cornerHeight: 8, transform: nil)
+    ctx.addPath(p1)
+    ctx.fillPath()
+
+    let p2 = CGPath(roundedRect: appsRect, cornerWidth: 8, cornerHeight: 8, transform: nil)
+    ctx.addPath(p2)
+    ctx.fillPath()
+}
 
 let image = ctx.makeImage()!
 let url = URL(fileURLWithPath: CommandLine.arguments[1])
@@ -102,6 +123,8 @@ DEVICE=$(hdiutil attach -readwrite -nobrowse "$DMG_TMP" 2>&1 | tee /dev/stderr |
 echo "Mounted at /Volumes/${VOL_NAME} (device: $DEVICE)"
 
 # ── Configure Finder window via AppleScript ──
+# Key: a single open–configure–update–close cycle lets Finder detect
+# background brightness and pick the right label color (white on dark, black on light).
 echo "Configuring Finder window..."
 osascript <<'APPLESCRIPT'
 tell application "Finder"
@@ -115,18 +138,14 @@ tell application "Finder"
         set arrangement of theViewOptions to not arranged
         set icon size of theViewOptions to 80
         set background picture of theViewOptions to file ".background:bg.png"
-        set position of item "Diary.app" of container window to {160, 140}
-        set position of item "Applications" of container window to {380, 140}
-        close
-        open
+        set position of item "Diary.app" of container window to {180, 180}
+        set position of item "Applications" of container window to {420, 180}
         update without registering applications
-        delay 2
-        close
+        delay 1
     end tell
 end tell
 APPLESCRIPT
 
-# Give Finder a moment to write .DS_Store
 sleep 1
 
 # ── Unmount ──
