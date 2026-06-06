@@ -11,19 +11,38 @@ BG_NAME="bg.png"
 # ── Build app ──
 ./build.sh
 
-# ── Generate warm paper gradient background ──
+# ── Detect system appearance ──
+if defaults read -g AppleInterfaceStyle 2>/dev/null | grep -q Dark; then
+    APPEARANCE="dark"
+    echo "System: dark mode → dark gradient background"
+else
+    APPEARANCE="light"
+    echo "System: light mode → warm paper gradient background"
+fi
+
+# ── Generate gradient background ──
 echo "Generating background image..."
-swift - <<'SWIFT' /tmp/${BG_NAME}
+swift - <<'SWIFT' /tmp/${BG_NAME} $APPEARANCE
 import CoreGraphics
 import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
 let width = 600, height = 400
+let isDark = CommandLine.arguments.count > 2 && CommandLine.arguments[2] == "dark"
 
 let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
-let topColor    = CGColor(red: 0.996, green: 0.988, blue: 0.973, alpha: 1.0) // #FEFCF8
-let bottomColor = CGColor(red: 0.961, green: 0.929, blue: 0.878, alpha: 1.0) // #F5EDE0
+
+let topColor: CGColor
+let bottomColor: CGColor
+
+if isDark {
+    topColor    = CGColor(red: 0.18, green: 0.18, blue: 0.18, alpha: 1.0)  // #2E2E2E
+    bottomColor = CGColor(red: 0.12, green: 0.12, blue: 0.12, alpha: 1.0)  // #1F1F1F
+} else {
+    topColor    = CGColor(red: 0.996, green: 0.988, blue: 0.973, alpha: 1.0) // #FEFCF8
+    bottomColor = CGColor(red: 0.961, green: 0.929, blue: 0.878, alpha: 1.0) // #F5EDE0
+}
 
 let gradient = CGGradient(
     colorsSpace: colorSpace,
